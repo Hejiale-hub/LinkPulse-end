@@ -1,0 +1,23 @@
+server:
+  port: 8080 #端口
+  tomcat:
+    uri-encoding: UTF-8 #服务编码
+spring:
+  profiles:
+    active: dev
+  datasource:
+    url: jdbc:mysql://192.168.150.101:3306/link_pulse?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 123
+    driver-class-name: com.mysql.cj.jdbc.Driver
+logging:
+  level:
+    com.hejiale: debug
+link:
+  jwt:
+    # 设置 jwt 签名加密时使用的秘钥
+    secret-key: linkPulse-secretKey
+    # 设置 jwt 过期时间
+    ttl: 360000
+    # 设置前端传递过来的令牌名称
+    token-name: token
