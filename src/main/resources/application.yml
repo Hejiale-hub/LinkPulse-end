@@ -16,7 +16,7 @@ logging:
 link:
   jwt:
     # 设置 jwt 签名加密时使用的秘钥
-    secret-key: linkPulse-secretKey
+    secret-key: linkPulse-secretKey-2026-secure-key!
     # 设置 jwt 过期时间
     ttl: 360000
     # 设置前端传递过来的令牌名称

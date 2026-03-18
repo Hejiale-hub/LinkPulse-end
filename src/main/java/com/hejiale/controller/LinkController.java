@@ -3,14 +3,13 @@ package com.hejiale.controller;
 
 import com.hejiale.domain.dto.CreateLinkDTO;
 import com.hejiale.domain.vo.LinkCodeVO;
+import com.hejiale.domain.vo.MonitorListDetialsVO;
+import com.hejiale.domain.vo.MonitorListVO;
 import com.hejiale.domain.vo.Result;
 import com.hejiale.service.ILinkService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -37,5 +36,13 @@ public class LinkController {
     public Result<List<LinkCodeVO>> createShortLink(@RequestBody CreateLinkDTO createLinkDTO) {
         List<LinkCodeVO> linkCodeVOList = shortLinkService.createShortLink(createLinkDTO);
         return Result.success(linkCodeVOList);
+    }
+    /**
+     * 获取link监控列表
+     */
+    @GetMapping("/monitorList")
+    public Result<List<MonitorListVO<MonitorListDetialsVO>>> getLinkMonitorList() {
+        List<MonitorListVO<MonitorListDetialsVO>> monitorListVOList = shortLinkService.getLinkMonitorList();
+        return Result.success(monitorListVOList);
     }
 }

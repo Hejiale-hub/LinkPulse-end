@@ -2,4 +2,15 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.hejiale.mapper.LinkAccessLogMapper">
 
+    <select id="CountBatchLinkAccess" resultType="com.hejiale.domain.vo.LogCountVO" parameterType="java.util.List">
+        SELECT
+            link_id,
+            COUNT(*) AS 'count'
+        FROM link_access_log
+        WHERE link_id IN
+        <foreach item="linkId" collection="linkIds" separator="," open="(" close=")">
+            #{linkId}
+        </foreach>
+        GROUP BY link_id
+    </select>
 </mapper>

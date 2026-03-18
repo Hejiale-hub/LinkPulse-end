@@ -4,6 +4,8 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.hejiale.domain.dto.CreateLinkDTO;
 import com.hejiale.domain.po.Link;
 import com.hejiale.domain.vo.LinkCodeVO;
+import com.hejiale.domain.vo.MonitorListDetialsVO;
+import com.hejiale.domain.vo.MonitorListVO;
 
 import java.util.List;
 
@@ -18,4 +20,6 @@ import java.util.List;
 public interface ILinkService extends IService<Link> {
 
     List<LinkCodeVO> createShortLink(CreateLinkDTO createLinkDTO);
+
+    List<MonitorListVO<MonitorListDetialsVO>> getLinkMonitorList();
 }

@@ -2,6 +2,7 @@ package com.hejiale.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hejiale.common.Properties.JwtProperties;
+import com.hejiale.common.exception.LoginFailedException;
 import com.hejiale.common.util.JwtUtil;
 import com.hejiale.domain.po.User;
 import com.hejiale.domain.vo.UserLoginVO;
@@ -62,7 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 .eq(User::getPassword, user.getPassword())
                 .one();
         if (dbUser == null) {
-            throw new IllegalArgumentException("账号或密码错误");
+            throw new LoginFailedException("账号或密码错误");
         }
         // 登录成功，下发JWT令牌
         Map<String, Object> claims = new HashMap<>();

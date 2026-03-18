@@ -30,7 +30,7 @@ public class Link implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty(value = "主键ID，自增")
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "id", type = IdType.ASSIGN_ID)
     private Long id;
 
     @ApiModelProperty(value = "短码（如 aB3c9e），Base62编码结果")
@@ -46,7 +46,7 @@ public class Link implements Serializable {
     private String originalUrl;
 
     @TableField("user_id")
-    private Integer userId;
+    private long userId;
 
     @ApiModelProperty(value = "是否启用 (1:启用, 0:禁用)")
     @TableField("is_active")
