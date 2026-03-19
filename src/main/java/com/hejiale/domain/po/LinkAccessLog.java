@@ -35,7 +35,7 @@ public class LinkAccessLog implements Serializable {
 
     @ApiModelProperty(value = "所属短码，关联short_link表")
     @TableField("link_id")
-    private String linkId;
+    private Long linkId;
 
     @ApiModelProperty(value = "访问者IP地址（支持IPv6）")
     @TableField("ip")

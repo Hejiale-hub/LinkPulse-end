@@ -2,10 +2,9 @@ package com.hejiale.controller;
 
 
 import com.hejiale.domain.dto.CreateLinkDTO;
-import com.hejiale.domain.vo.LinkCodeVO;
-import com.hejiale.domain.vo.MonitorListDetialsVO;
-import com.hejiale.domain.vo.MonitorListVO;
-import com.hejiale.domain.vo.Result;
+import com.hejiale.domain.dto.MonitorPageDTO;
+import com.hejiale.domain.dto.TitleDistributionDTO;
+import com.hejiale.domain.vo.*;
 import com.hejiale.service.ILinkService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
@@ -41,8 +40,25 @@ public class LinkController {
      * 获取link监控列表
      */
     @GetMapping("/monitorList")
-    public Result<List<MonitorListVO<MonitorListDetialsVO>>> getLinkMonitorList() {
-        List<MonitorListVO<MonitorListDetialsVO>> monitorListVOList = shortLinkService.getLinkMonitorList();
-        return Result.success(monitorListVOList);
+    public Result<PageVO<MonitorListVO>> getLinkMonitorListPage(MonitorPageDTO monitorPageDTO) {
+        PageVO<MonitorListVO> monitorListPageVO = shortLinkService.getLinkMonitorListPage(monitorPageDTO);
+        return Result.success(monitorListPageVO);
+    }
+
+    /**
+     * 获取link监控详情列表
+     */
+    @GetMapping("/monitorDetailRecords")
+    public Result<PageVO<MonitorListDetialsVO>> getLinkMonitorDetailRecords(MonitorPageDTO monitorPageDTO) {
+        PageVO<MonitorListDetialsVO> MonitorDetailPageVO = shortLinkService.getLinkMonitorDetailRecords(monitorPageDTO);
+        return Result.success(MonitorDetailPageVO);
+    }
+    /**
+     * 链接访问分布情况（饼图）
+     */
+    @GetMapping("/monitorLinkTitleDistribution")
+    public Result<List<TitleDistributionVO>> getTitleDistribution(TitleDistributionDTO titleDistributionDTO) {
+        List<TitleDistributionVO> titleDistributionVOList = shortLinkService.getTitleDistribution(titleDistributionDTO);
+        return Result.success(titleDistributionVOList);
     }
 }

@@ -2,10 +2,10 @@ package com.hejiale.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hejiale.domain.dto.CreateLinkDTO;
+import com.hejiale.domain.dto.MonitorPageDTO;
+import com.hejiale.domain.dto.TitleDistributionDTO;
 import com.hejiale.domain.po.Link;
-import com.hejiale.domain.vo.LinkCodeVO;
-import com.hejiale.domain.vo.MonitorListDetialsVO;
-import com.hejiale.domain.vo.MonitorListVO;
+import com.hejiale.domain.vo.*;
 
 import java.util.List;
 
@@ -21,5 +21,9 @@ public interface ILinkService extends IService<Link> {
 
     List<LinkCodeVO> createShortLink(CreateLinkDTO createLinkDTO);
 
-    List<MonitorListVO<MonitorListDetialsVO>> getLinkMonitorList();
+    PageVO<MonitorListVO> getLinkMonitorListPage(MonitorPageDTO monitorPageDTO);
+
+    PageVO<MonitorListDetialsVO> getLinkMonitorDetailRecords(MonitorPageDTO monitorPageDTO);
+
+    List<TitleDistributionVO> getTitleDistribution(TitleDistributionDTO titleDistributionDTO);
 }

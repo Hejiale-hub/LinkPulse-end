@@ -36,7 +36,7 @@ public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, L
 
     @Override
     public List<LogCountVO> CountBatchLinkAccess(List linkIds) {
-        List<LogCountVO> logCountVOList = LogMapper.CountBatchLinkAccess(linkIds);
+        List<LogCountVO> logCountVOList = LogMapper.countBatchLinkAccess(linkIds);
         return logCountVOList;
     }
 }

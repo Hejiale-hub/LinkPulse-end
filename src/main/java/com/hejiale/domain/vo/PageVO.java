@@ -2,38 +2,25 @@ package com.hejiale.domain.vo;
 
 
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
 
-@NoArgsConstructor
+@Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class PageVO<T> {
-    private Integer total; // Total number of records
-    private Integer totalPage; // Total number of pages
+    private Long total;
+    private Integer pageNo;
+    private Integer pageSize;
     private List<T> list;
 
-    public Integer getTotal() {
-        return total;
+    public static <T> PageVO<T> empty() {
+        return new PageVO<>(0L, 0, 0, null);
     }
 
-    public void setTotal(Integer total) {
-        this.total = total;
-    }
-
-    public Integer getTotalPage() {
-        return totalPage;
-    }
-
-    public void setTotalPage(Integer totalPage) {
-        this.totalPage = totalPage;
-    }
-
-    public List<T> getList() {
-        return list;
-    }
-
-    public void setList(List<T> list) {
-        this.list = list;
+    public static <T> PageVO<T> emptyList() {
+        return new PageVO<>(0L, 0, 0, null);
     }
 }

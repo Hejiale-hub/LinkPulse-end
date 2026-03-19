@@ -4,6 +4,6 @@ import lombok.Data;
 
 @Data
 public class LogCountVO {
-    private String linkId;
+    private Long linkId;
     private Long count;
 }

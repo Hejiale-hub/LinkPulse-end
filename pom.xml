@@ -58,7 +58,13 @@
 			<groupId>com.baomidou</groupId>
 			<artifactId>mybatis-plus-spring-boot3-starter</artifactId>
 			<version>3.5.15</version>
-		</dependency>
+        </dependency>
+        <!-- mybatis-plus 分页插件 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.15</version>
+        </dependency>
         <!-- knife4j -->
         <dependency>
             <groupId>com.github.xiaoymin</groupId>

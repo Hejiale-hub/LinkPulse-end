@@ -2,7 +2,7 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="com.hejiale.mapper.LinkAccessLogMapper">
 
-    <select id="CountBatchLinkAccess" resultType="com.hejiale.domain.vo.LogCountVO" parameterType="java.util.List">
+    <select id="countBatchLinkAccess" resultType="com.hejiale.domain.vo.LogCountVO" parameterType="java.util.List">
         SELECT
             link_id,
             COUNT(*) AS 'count'
@@ -13,4 +13,41 @@
         </foreach>
         GROUP BY link_id
     </select>
+    <select id="countLogByLink" resultType="com.hejiale.common.domain.CountLogVO">
+        SELECT
+            link_id,
+            clickCount,
+            province AS topProvince,
+            latestClickTime
+        FROM (
+            SELECT
+                link_id,
+                COUNT(*) OVER (PARTITION BY link_id) AS clickCount,
+                ROW_NUMBER() OVER (PARTITION BY link_id ORDER BY create_time DESC) AS rn,
+                province,
+                create_time AS latestClickTime
+            FROM link_access_log
+            WHERE link_id IN
+                <foreach item="linkId" collection="linkIds" separator="," open="(" close=")">
+                    #{linkId}
+                </foreach>
+                ) t
+        WHERE rn = 1;
+    </select>
+    <select id="countLogForDistribution" resultType="com.hejiale.domain.vo.LogCountVO">
+        SELECT
+        link_id,
+        COUNT(*) AS 'count'
+        FROM link_access_log
+        WHERE link_id IN
+        <foreach item="linkId" collection="ids" separator="," open="(" close=")">
+            #{linkId}
+        </foreach>
+        AND create_time &gt;= #{dto.startDate}
+        AND create_time &lt; DATE_ADD(#{dto.endDate}, INTERVAL 1 DAY)
+        GROUP BY link_id
+        ORDER BY count DESC
+        LIMIT #{dto.topN}
+    </select>
+
 </mapper>
