@@ -18,4 +18,5 @@ public class MonitorPageDTO extends PageDTO{
     private String linkCodeKeyword;
     private String originalUrlKeyword;
     private String regionKeyword;
+    private String granularity = "day";
 }

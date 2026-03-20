@@ -1,6 +1,7 @@
 package com.hejiale.mapper;
 
-import com.hejiale.common.domain.CountLogVO;
+import com.hejiale.common.domain.vo.CountLogVO;
+import com.hejiale.domain.dto.MonitorPageDTO;
 import com.hejiale.domain.dto.TitleDistributionDTO;
 import com.hejiale.domain.po.LinkAccessLog;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -33,4 +34,6 @@ public interface LinkAccessLogMapper extends BaseMapper<LinkAccessLog> {
 
 
     List<LogCountVO> countLogForDistribution(@Param("ids") List<Long> ids, @Param("dto") TitleDistributionDTO titleDistributionDTO);
+
+    List<CountLogVO> countLogForTrend(@Param("linkIds") List<Long> linkIds, @Param("dto") MonitorPageDTO monitorPageDTO);
 }

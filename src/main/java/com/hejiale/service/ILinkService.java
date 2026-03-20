@@ -26,4 +26,6 @@ public interface ILinkService extends IService<Link> {
     PageVO<MonitorListDetialsVO> getLinkMonitorDetailRecords(MonitorPageDTO monitorPageDTO);
 
     List<TitleDistributionVO> getTitleDistribution(TitleDistributionDTO titleDistributionDTO);
+
+    List<MonitorTrendVO> getMonitorTrend(MonitorPageDTO monitorPageDTO);
 }

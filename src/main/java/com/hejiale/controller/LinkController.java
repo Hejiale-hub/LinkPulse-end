@@ -61,4 +61,10 @@ public class LinkController {
         List<TitleDistributionVO> titleDistributionVOList = shortLinkService.getTitleDistribution(titleDistributionDTO);
         return Result.success(titleDistributionVOList);
     }
+
+    @GetMapping("/monitorTrend")
+    public Result<List<MonitorTrendVO>> getMonitorTrend(MonitorPageDTO monitorPageDTO) {
+        List<MonitorTrendVO> monitorTrendVOList = shortLinkService.getMonitorTrend(monitorPageDTO);
+        return Result.success(monitorTrendVOList);
+    }
 }

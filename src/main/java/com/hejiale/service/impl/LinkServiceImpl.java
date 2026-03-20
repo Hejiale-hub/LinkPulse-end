@@ -3,7 +3,7 @@ package com.hejiale.service.impl;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hejiale.common.context.UserContext;
-import com.hejiale.common.domain.CountLogVO;
+import com.hejiale.common.domain.vo.CountLogVO;
 import com.hejiale.common.exception.CreateLinkCodeException;
 import com.hejiale.common.util.LinkUtils;
 import com.hejiale.domain.dto.CreateLinkDTO;
@@ -229,6 +229,43 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
             titleDistributionVO.setLinkTitle(linkIdTitleMap.get(logCount.getLinkId()));
             titleDistributionVO.setClicks(logCount.getCount());
             return titleDistributionVO;
+        }).toList();
+    }
+
+    @Override
+    public List<MonitorTrendVO> getMonitorTrend(MonitorPageDTO monitorPageDTO) {
+        // 获取当前用户id
+        Long userId = UserContext.getUserId();
+
+        // 查询Link表获取当前用户link集合
+        List<Link> linkList = lambdaQuery()
+                .eq(Link::getUserId, userId)
+                .like(monitorPageDTO.getLinkTitleKeyword() != null,
+                        Link::getLinkTitle,
+                        monitorPageDTO.getLinkTitleKeyword())
+                .like(monitorPageDTO.getLinkCodeKeyword() != null,
+                        Link::getLinkCode,
+                        monitorPageDTO.getLinkCodeKeyword())
+                .like(monitorPageDTO.getOriginalUrlKeyword() != null,
+                        Link::getOriginalUrl,
+                        monitorPageDTO.getRegionKeyword())
+                .list();
+        if (linkList.isEmpty()){
+            log.info("该用户没有创建过linkCode");
+            return Collections.emptyList();
+        }
+
+        // 查询Link_access_log表获取访问记录数据集合
+        // 获取linkId集合
+        List<Long> linkIds = linkList.stream().map(Link::getId).toList();
+        List<CountLogVO> countLogList = linkAccessLogMapper.countLogForTrend(linkIds, monitorPageDTO);
+
+        // 封装返回
+        return countLogList.stream().map(countLog -> {
+            MonitorTrendVO monitorTrendVO = new MonitorTrendVO();
+            monitorTrendVO.setTime(countLog.getTime());
+            monitorTrendVO.setClicks(countLog.getClickCount());
+            return monitorTrendVO;
         }).toList();
     }
 }

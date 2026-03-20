@@ -13,7 +13,7 @@
         </foreach>
         GROUP BY link_id
     </select>
-    <select id="countLogByLink" resultType="com.hejiale.common.domain.CountLogVO">
+    <select id="countLogByLink" resultType="com.hejiale.common.domain.vo.CountLogVO">
         SELECT
             link_id,
             clickCount,
@@ -48,6 +48,19 @@
         GROUP BY link_id
         ORDER BY count DESC
         LIMIT #{dto.topN}
+    </select>
+    <select id="countLogForTrend" resultType="com.hejiale.common.domain.vo.CountLogVO">
+        SELECT
+            DATE(create_time) as 'time',
+            COUNT(*) AS 'clickCount'
+            FROM link_access_log
+        WHERE link_id IN
+        <foreach item="linkId" collection="linkIds" separator="," open="(" close=")">
+            #{linkId}
+        </foreach>
+        AND create_time &gt;= #{dto.startDate}
+        AND create_time &lt; DATE_ADD(#{dto.endDate}, INTERVAL 1 DAY)
+        GROUP BY DATE(create_time)
     </select>
 
 </mapper>
