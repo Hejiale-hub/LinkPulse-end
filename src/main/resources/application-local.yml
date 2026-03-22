@@ -1,0 +1,3 @@
+link:
+  url:
+    prefix: http://localhost:8080/ # 设置前端访问的 url 前缀

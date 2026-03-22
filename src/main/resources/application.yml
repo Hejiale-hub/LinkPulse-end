@@ -5,7 +5,7 @@ server:
 
 spring:
   profiles:
-    active: dev
+    active: local # 激活本地环境配置
   datasource:
     url: jdbc:mysql://192.168.150.101:3306/link_pulse?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: root
@@ -27,3 +27,5 @@ link:
     ttl: 3600000000000
     # 设置前端传递过来的令牌名称
     token-name: token
+  url:
+    prefix:${link.url.prefix} # 设置前端访问的 url 前缀

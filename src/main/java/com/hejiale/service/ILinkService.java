@@ -6,6 +6,8 @@ import com.hejiale.domain.dto.MonitorPageDTO;
 import com.hejiale.domain.dto.TitleDistributionDTO;
 import com.hejiale.domain.po.Link;
 import com.hejiale.domain.vo.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import java.util.List;
 
@@ -28,4 +30,6 @@ public interface ILinkService extends IService<Link> {
     List<TitleDistributionVO> getTitleDistribution(TitleDistributionDTO titleDistributionDTO);
 
     List<MonitorTrendVO> getMonitorTrend(MonitorPageDTO monitorPageDTO);
+
+    String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response);
 }
