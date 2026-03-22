@@ -30,7 +30,8 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
                 .addPathPatterns("/**")
                 .excludePathPatterns(
                         "/user/register",
-                        "/user/login"
+                        "/user/login",
+                        "/{linkCode}"
                 );
     }
 }
