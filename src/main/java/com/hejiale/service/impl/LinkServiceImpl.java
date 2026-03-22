@@ -2,6 +2,7 @@ package com.hejiale.service.impl;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hejiale.common.constants.UrlConstants;
 import com.hejiale.common.context.UserContext;
 import com.hejiale.common.domain.vo.CountLogVO;
 import com.hejiale.common.exception.CreateLinkCodeException;
@@ -16,6 +17,8 @@ import com.hejiale.mapper.LinkAccessLogMapper;
 import com.hejiale.mapper.LinkMapper;
 import com.hejiale.service.ILinkAccessLogService;
 import com.hejiale.service.ILinkService;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -43,7 +46,7 @@ import java.util.stream.Collectors;
 @Service
 public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements ILinkService {
     private final ILinkAccessLogService linkAccessLogService;
-    private final LinkAccessLogMapper linkAccessLogMapper;
+    private final LinkAccessLogMapper linkAccessLogMapper;;
     @Transactional
     @Override
     public List<LinkCodeVO> createShortLink(CreateLinkDTO createLinkDTO) {
@@ -61,11 +64,17 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         // 更新短码回数据库
         link.setLinkCode(linkCode);
         updateById(link);
+
+        // 添加链接url前缀
+        StringBuilder codeUrl = new StringBuilder();
+        codeUrl.append(UrlConstants.LINK_PREFIX);
+        codeUrl.append(linkCode);
+
         // 封装
         LinkCodeVO linkCodeVO = new LinkCodeVO();
         List<LinkCodeVO> linkCodeVOList = new ArrayList<>();
         linkCodeVO.setLinkTitle(createLinkDTO.getLinkTitle());
-        linkCodeVO.setLinkCode(linkCode);
+        linkCodeVO.setLinkCode(codeUrl.toString());
         linkCodeVOList.add(linkCodeVO);
         return linkCodeVOList;
     }
@@ -267,5 +276,37 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
             monitorTrendVO.setClicks(countLog.getClickCount());
             return monitorTrendVO;
         }).toList();
+    }
+
+    /**
+     * 访问短链接，重定向到原始URL
+     * @param linkCode 短链接code
+     * @param request 请求对象
+     * @param response 响应对象
+     */
+    @Override
+    public String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response) {
+        // 根据shortCode查询Link表获取原始URL ,todo redis缓存查询
+        Link link = lambdaQuery()
+                .eq(Link::getLinkCode, linkCode)
+                .select(Link::getOriginalUrl)
+                .one();
+
+        String url = link.getOriginalUrl();
+
+        if (url == null) {
+            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+            throw new RuntimeException("链接不存在或已失效");
+        }
+
+        // 处理原始URL没有协议头的情况，默认添加http://
+        if (!url.startsWith("http://") && !url.startsWith("https://")) {
+            url = "http://" + url;
+        }
+
+        // todo 异步记录日志
+        // linkAccessLogService.asyncRecordLog(shortCode, request);
+
+        return url;
     }
 }
