@@ -8,6 +8,7 @@ import com.hejiale.domain.po.Link;
 import com.hejiale.domain.vo.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import javassist.NotFoundException;
 
 import java.util.List;
 
@@ -31,5 +32,5 @@ public interface ILinkService extends IService<Link> {
 
     List<MonitorTrendVO> getMonitorTrend(MonitorPageDTO monitorPageDTO);
 
-    String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response);
+    String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response) throws NotFoundException;
 }
