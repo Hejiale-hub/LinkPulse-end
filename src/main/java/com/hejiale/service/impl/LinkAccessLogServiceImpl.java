@@ -1,6 +1,7 @@
 package com.hejiale.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hejiale.common.domain.po.RequestInfo;
 import com.hejiale.common.util.IpUtils;
 import com.hejiale.common.util.UaUtils;
 import com.hejiale.domain.po.LinkAccessLog;
@@ -33,8 +34,6 @@ import static com.hejiale.common.constants.MqConstants.*;
 @Service
 public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, LinkAccessLog> implements ILinkAccessLogService {
     private final LinkAccessLogMapper LogMapper;
-    private static volatile Searcher searcher;
-    private final RabbitTemplate rabbitTemplate;
 
     /**
      * 根据linkId获取访问日志
@@ -58,39 +57,28 @@ public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, L
     /**
      * 异步记录访问日志
      */
-    @Override
-    public void asyncRecord(Long linkId, HttpServletRequest request) {
-        // 构建访问日志对象
-        LinkAccessLog log = buildLog(linkId, request);
-        // 发送MQ消息，异步保存日志到数据库
-        rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, log);
-    }
-    /**
-     * 直接保存访问日志到数据库
-     * @param log 访问日志对象
-     */
     @RabbitListener(queues = LOGRECORD_QUEUE)
-    public void record(LinkAccessLog log) {
-        boolean result = save(log);
-            if (!result) {
-                // 记录日志失败，可以考虑重试机制或者记录到死信队列
-                // 这里简单打印日志
-                System.err.println("保存日志失败: " + log);
-            }
+    @Override
+    public void asyncRecord(RequestInfo requestInfo) {
+        // 构建访问日志对象
+        LinkAccessLog log = buildLog(requestInfo);
+        // 直接保存访问日志到数据库
+        boolean save = save(log);
+        if (!save) {
+            System.err.println("保存访问日志失败: " + log);
+        }
     }
 
     /**
      * 构建访问日志对象，包含IP解析和UA解析
-     * @param linkId 短链接code
-     * @param request 请求对象
      * @return 构建好的访问日志对象
      */
-    private LinkAccessLog buildLog(Long linkId, HttpServletRequest request) {
+    private LinkAccessLog buildLog(RequestInfo requestInfo) {
         LinkAccessLog log = new LinkAccessLog();
 
         // 1. 获取基础信息
-        String ip = IpUtils.getIpAddress(request);
-        String uaString = request.getHeader("User-Agent");
+        String ip = IpUtils.getIpAddress(requestInfo);
+        String ua = requestInfo.getHeader().get("user-agent");
 
 
         // ===== IP 解析（省市） =====
@@ -114,13 +102,13 @@ public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, L
         }
 
         // 3. 解析 User-Agent
-        UserAgent ua = UaUtils.parse(uaString);
+        UserAgent uaInfo = UaUtils.parse(ua);
         // 获取操作系统和浏览器名称
-        String os = ua.getValue(UserAgent.OPERATING_SYSTEM_NAME_VERSION_MAJOR);
-        String browser = ua.getValue(UserAgent.AGENT_NAME_VERSION_MAJOR);
+        String os = uaInfo.getValue(UserAgent.OPERATING_SYSTEM_NAME_VERSION_MAJOR);
+        String browser = uaInfo.getValue(UserAgent.AGENT_NAME_VERSION_MAJOR);
 
         // 封装其他字段
-        log.setLinkId(linkId);
+        log.setLinkId(requestInfo.getLinkId());
         log.setIp(ip);
         log.setUa(String.valueOf(ua));
         log.setCreateTime(LocalDateTime.now());

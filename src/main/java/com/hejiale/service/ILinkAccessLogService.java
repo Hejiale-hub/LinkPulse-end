@@ -1,6 +1,7 @@
 package com.hejiale.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.hejiale.common.domain.po.RequestInfo;
 import com.hejiale.domain.po.LinkAccessLog;
 import com.hejiale.domain.vo.LogCountVO;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,5 +32,5 @@ public interface ILinkAccessLogService extends IService<LinkAccessLog> {
     /**
      * 异步记录访问日志
      */
-    void asyncRecord(Long linkId, HttpServletRequest request);
+    void asyncRecord(RequestInfo requestInfo);
 }

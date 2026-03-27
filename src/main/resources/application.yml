@@ -20,6 +20,13 @@ spring:
     username: linkpulse      # 用户名
     password: 123      # 密码
     virtual-host: /linkPulse      # 虚拟主机
+  data:
+    redis:
+      host: 192.168.150.101
+      port: 6379
+      password: 123321
+      database: 0
+      timeout: 3000ms
 
 logging:
   level:
