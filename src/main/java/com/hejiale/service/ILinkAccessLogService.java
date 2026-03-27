@@ -3,6 +3,7 @@ package com.hejiale.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hejiale.domain.po.LinkAccessLog;
 import com.hejiale.domain.vo.LogCountVO;
+import jakarta.servlet.http.HttpServletRequest;
 
 import java.util.List;
 
@@ -26,4 +27,9 @@ public interface ILinkAccessLogService extends IService<LinkAccessLog> {
      * 批量获取link的访问次数
      */
     List<LogCountVO> CountBatchLinkAccess(List linkIds);
+
+    /**
+     * 异步记录访问日志
+     */
+    void asyncRecord(Long linkId, HttpServletRequest request);
 }

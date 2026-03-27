@@ -3,7 +3,7 @@ package com.hejiale.service.impl;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hejiale.common.Properties.JwtProperties;
 import com.hejiale.common.exception.LoginFailedException;
-import com.hejiale.common.util.JwtUtil;
+import com.hejiale.common.util.JwtUtils;
 import com.hejiale.domain.po.User;
 import com.hejiale.domain.vo.UserLoginVO;
 import com.hejiale.mapper.UserMapper;
@@ -68,7 +68,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
         // 登录成功，下发JWT令牌
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", dbUser.getId());
-        String token = JwtUtil.createJWT(
+        String token = JwtUtils.createJWT(
                 jwtProperties.getSecretKey(),
                 jwtProperties.getTtl(),
                 claims);

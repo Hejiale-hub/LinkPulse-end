@@ -21,6 +21,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,6 +48,7 @@ import java.util.stream.Collectors;
 public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements ILinkService {
     private final ILinkAccessLogService linkAccessLogService;
     private final LinkAccessLogMapper linkAccessLogMapper;;
+
     @Transactional
     @Override
     public List<LinkCodeVO> createShortLink(CreateLinkDTO createLinkDTO) {
@@ -289,23 +291,21 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         // 根据shortCode查询Link表获取原始URL ,todo redis缓存查询
         Link link = lambdaQuery()
                 .eq(Link::getLinkCode, linkCode)
-                .select(Link::getOriginalUrl)
+                .select(Link::getOriginalUrl, Link::getId)
                 .one();
-
-        String url = link.getOriginalUrl();
-
-        if (url == null) {
-            response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        if (link == null) {
             throw new RuntimeException("链接不存在或已失效");
         }
+
+        String url = link.getOriginalUrl();
 
         // 处理原始URL没有协议头的情况，默认添加http://
         if (!url.startsWith("http://") && !url.startsWith("https://")) {
             url = "http://" + url;
         }
 
-        // todo 异步记录日志
-        // linkAccessLogService.asyncRecordLog(shortCode, request);
+        // 异步记录访问日志
+        linkAccessLogService.asyncRecord(link.getId(), request);
 
         return url;
     }

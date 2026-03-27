@@ -23,10 +23,8 @@ public class RedirectController {
      * @param response 响应对象
      */
     @GetMapping("/{linkCode}")
-    public void redirect(@PathVariable(value = "linkCode") String linkCode,
-                         HttpServletRequest request,
-                         HttpServletResponse response) throws IOException {
-
+    public void redirect(@PathVariable(value = "linkCode") String linkCode, HttpServletRequest request, HttpServletResponse response) throws IOException {
+        // 获取原始URL
         String url = LinkService.redirect(linkCode, request, response);
         // 302 重定向
         response.setStatus(HttpServletResponse.SC_FOUND);
