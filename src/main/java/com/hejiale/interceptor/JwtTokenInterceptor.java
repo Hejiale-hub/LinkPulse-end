@@ -2,7 +2,7 @@ package com.hejiale.interceptor;
 
 import com.hejiale.common.Properties.JwtProperties;
 import com.hejiale.common.context.UserContext;
-import com.hejiale.common.util.JwtUtil;
+import com.hejiale.common.util.JwtUtils;
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -38,7 +38,7 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
         //2、校验令牌
         try {
             log.info("jwt校验:{}", token);
-            Claims claims = JwtUtil.parseJWT(jwtProperties.getSecretKey(), token);
+            Claims claims = JwtUtils.parseJWT(jwtProperties.getSecretKey(), token);
 
             //通过当前线程局部变量对象threadLocal设置当前登录员工id
             Long userId = Long.valueOf(claims.get("userId").toString());

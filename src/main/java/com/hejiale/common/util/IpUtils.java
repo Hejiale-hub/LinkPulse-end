@@ -1,0 +1,66 @@
+package com.hejiale.common.util;
+
+import jakarta.servlet.http.HttpServletRequest;
+import org.lionsoul.ip2region.xdb.Searcher;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.util.FileCopyUtils;
+
+import java.io.InputStream;
+
+public class IpUtils {
+
+    private static Searcher searcher;
+
+    static {
+        try {
+            // 从 classpath 加载 xdb 文件到内存，提高查询性能
+            ClassPathResource resource = new ClassPathResource("ip2region.xdb");
+            InputStream inputStream = resource.getInputStream();
+            byte[] cBuff = FileCopyUtils.copyToByteArray(inputStream);
+            searcher = Searcher.newWithBuffer(cBuff);
+        } catch (Exception e) {
+            System.err.println("初始化 ip2region 失败: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 获取客户端真实 IP
+     */
+    public static String getIpAddress(HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("WL-Proxy-Client-IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_CLIENT_IP");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader("HTTP_X_FORWARDED_FOR");
+        }
+        if (ip == null || ip.length() == 0 || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        // 对于通过多个代理的情况，第一个IP为客户端真实IP,多个IP按照','分割
+        if (ip != null && ip.length() > 15) {
+            if (ip.indexOf(",") > 0) {
+                ip = ip.substring(0, ip.indexOf(","));
+            }
+        }
+        return ip;
+    }
+
+    /**
+     * 根据 IP 获取城市信息
+     * 返回格式通常为：国家|区域|省份|城市|ISP
+     */
+    public static String getRegion(String ip) {
+        try {
+            return searcher.search(ip);
+        } catch (Exception e) {
+            return "未知";
+        }
+    }
+}

@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 
-public class JwtUtil {
+public class JwtUtils {
     /**
      * 生成 jwt
      * 使用 Hs256 算法，私匙使用固定秘钥
