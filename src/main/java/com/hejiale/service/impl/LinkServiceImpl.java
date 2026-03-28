@@ -25,6 +25,8 @@ import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -57,6 +59,8 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
     private final RabbitTemplate rabbitTemplate;
     private final RBloomFilter<String> bloomFilter;
     private final StringRedisTemplate redisTemplate;
+    private final RedissonClient redisson;
+    private final RedissonClient redissonClient;
 
     @Transactional
     @Override
@@ -320,28 +324,48 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         }
 
         // 3. 缓存未命中，查询数据库
-        // TODO 此处为了防止缓存击穿（并发查 DB），可以加上分布式锁，如 Redisson 的 getLock(cacheKey)
-        Link link = lambdaQuery()
-                .eq(Link::getLinkCode, linkCode)
-                .select(Link::getOriginalUrl, Link::getId)
-                .one();
-        if (link == null) {
-            // 数据库也不存在（布隆过滤器误判），写入空值，过期时间设短一点（如 5分钟）
-            redisTemplate.opsForValue().set(cacheKey, EMPTY_CACHE, 5, TimeUnit.MINUTES);
-            throw new RuntimeException("链接不存在或已失效");
+        // 此处为了防止缓存击穿（并发查 DB），可以加上分布式锁，如 Redisson 的 getLock(cacheKey)
+        RLock lock = redissonClient.getLock(cacheKey);
+        String url;
+        Link link;
+        try{
+            // 加锁
+            lock.lock();
+            // 再次检查缓存，防止在获取锁的过程中其他线程已经将数据写入缓存（获取锁后，其他线程将会阻塞等待，从db查询到数据写入缓存后释放锁，其他线程会获取锁，为了防止重复查询数据库，所以需要在获取锁后再一次检查缓存是否有数据）
+            originalUrl = redisTemplate.opsForValue().get(cacheKey);
+            if (StringUtils.isNotBlank(originalUrl)) {
+                if (EMPTY_CACHE.equals(originalUrl)) {
+                    throw new NotFoundException("短链接不存在");
+                }
+                return originalUrl;
+            }
+            // 查询数据库
+            link = lambdaQuery()
+                    .eq(Link::getLinkCode, linkCode)
+                    .select(Link::getOriginalUrl, Link::getId)
+                    .one();
+            if (link == null) {
+                // 数据库也不存在（布隆过滤器误判），写入空值，过期时间设短一点（如 5分钟）
+                redisTemplate.opsForValue().set(cacheKey, EMPTY_CACHE, 5, TimeUnit.MINUTES);
+                throw new RuntimeException("链接不存在或已失效");
+            }
+
+            url = link.getOriginalUrl();
+
+            // 处理原始URL没有协议头的情况，默认添加http://
+            if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                url = "http://" + url;
+            }
+
+            // 4. 数据库存在，写入缓存
+            // 设置过期时间：如 1 小时 + (0~10分钟随机数)，防止缓存雪崩
+            long expireTime = 3600 + new Random().nextInt(600);
+            redisTemplate.opsForValue().set(cacheKey, link.getOriginalUrl(), expireTime, TimeUnit.SECONDS);
+        }finally {
+            // 释放锁
+            lock.unlock();
         }
 
-        String url = link.getOriginalUrl();
-
-        // 处理原始URL没有协议头的情况，默认添加http://
-        if (!url.startsWith("http://") && !url.startsWith("https://")) {
-            url = "http://" + url;
-        }
-
-        // 4. 数据库存在，写入缓存
-        // 设置过期时间：如 1 小时 + (0~10分钟随机数)，防止缓存雪崩
-        long expireTime = 3600 + new Random().nextInt(600);
-        redisTemplate.opsForValue().set(cacheKey, link.getOriginalUrl(), expireTime, TimeUnit.SECONDS);
 
         // 构建异步消息对象，封装包含访问日志的必要信息
         RequestInfo requestInfo = new RequestInfo();
