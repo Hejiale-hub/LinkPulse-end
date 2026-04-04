@@ -5,28 +5,28 @@ server:
 
 spring:
   profiles:
-    active: local # 激活本地环境配置
+    active: prod # 激活环境配置
   datasource:
-    url: jdbc:mysql://192.168.150.101:3306/link_pulse?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 123
+    url: jdbc:mysql://${link.datasource.host}:${link.datasource.port}/${link.datasource.database}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    username: ${link.datasource.username} # 数据库用户名
+    password: ${link.datasource.password} # 数据库密码
     driver-class-name: com.mysql.cj.jdbc.Driver
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss   # 指定返回json日期格式
     time-zone: GMT+8
   rabbitmq:
-    host: 192.168.150.101      # 服务地址
-    port: 5672           # 端口，默认5672
-    username: linkpulse      # 用户名
-    password: 123      # 密码
-    virtual-host: /linkPulse      # 虚拟主机
+    host: ${link.rabbitmq.host}      # 服务地址
+    port: ${link.rabbitmq.port}           # 端口，默认5672
+    username: ${link.rabbitmq.username}      # 用户名
+    password: ${link.rabbitmq.password}      # 密码
+    virtual-host: ${link.rabbitmq.virtual-host}      # 虚拟主机
   data:
     redis:
-      host: 192.168.150.101
-      port: 6379
-      password: 123321
-      database: 0
-      timeout: 3000ms
+      host: ${link.redis.host}
+      port: ${link.redis.port}
+      password: ${link.redis.password}
+      database: ${link.redis.database}
+      timeout: ${link.redis.timeout}
 
 logging:
   level:
@@ -37,8 +37,6 @@ link:
     # 设置 jwt 签名加密时使用的秘钥
     secret-key: linkPulse-secretKey-2026-secure-key!
     # 设置 jwt 过期时间
-    ttl: 3600000000000
+    ttl: 360000000
     # 设置前端传递过来的令牌名称
     token-name: token
-  url:
-    prefix:${link.url.prefix} # 设置前端访问的 url 前缀

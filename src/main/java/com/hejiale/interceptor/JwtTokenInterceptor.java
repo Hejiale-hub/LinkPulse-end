@@ -55,4 +55,9 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
             return false;
         }
     }
+
+    public void afterCompletion(HttpServletRequest request, HttpServletResponse response, Object handler, Exception ex) throws Exception {
+        //清除当前线程局部变量对象threadLocal中保存的员工id
+        UserContext.removeUserId();
+    }
 }
