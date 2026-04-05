@@ -5,11 +5,13 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import javassist.NotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
 
+@Slf4j
 @RestController
 @RequiredArgsConstructor
 public class RedirectController {
@@ -26,6 +28,7 @@ public class RedirectController {
         // 获取原始URL
         String url = LinkService.redirect(linkCode, request, response);
         // 302 重定向
+        log.info("重定向...");
         response.setStatus(HttpServletResponse.SC_FOUND);
         response.setHeader("Location", url);
     }

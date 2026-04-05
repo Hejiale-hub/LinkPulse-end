@@ -3,6 +3,7 @@ package com.hejiale.service.impl;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.hejiale.common.Properties.UrlProperties;
 import com.hejiale.common.constants.UrlConstants;
 import com.hejiale.common.context.UserContext;
 import com.hejiale.common.domain.po.RequestInfo;
@@ -61,6 +62,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redisson;
     private final RedissonClient redissonClient;
+    private final UrlProperties urlProperties;
 
     @Transactional
     @Override
@@ -85,7 +87,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
 
         // 添加链接url前缀
         StringBuilder codeUrl = new StringBuilder();
-        codeUrl.append(UrlConstants.LINK_PREFIX);
+        codeUrl.append(urlProperties.getUrlPrefix());
         codeUrl.append(linkCode);
 
         // 封装
@@ -307,83 +309,120 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         // 根据shortCode查询Link表获取原始URL ,todo redis缓存查询
         // 1. 布隆过滤器拦截：如果判断不存在，则直接返回不存在
         if (!bloomFilter.contains(linkCode)) {
+            log.info("布隆过滤器判断短链接不存在，linkCode: {}", linkCode);
             throw new NotFoundException("布隆过滤器判断短链接不存在");
         }
-
-        String cacheKey = LINK_CODE_PREFIX_CACHE_KEY + linkCode;
-
+        log.info("布隆过滤器判断短链接可能存在，继续查询缓存和数据库，linkCode: {}", linkCode);
+        String urlCacheKey = LINK_CODE_PREFIX_CACHE_KEY + linkCode;
+        String idCacheKey = LINK_ID_PREFIX_CACHE_KEY + linkCode;
         // 2. 查询 Redis 缓存
-        String originalUrl = redisTemplate.opsForValue().get(cacheKey);
-
+        String originalUrl = null;
+        log.info("查询 Redis 缓存，cacheKey: {}", urlCacheKey);
+        try {
+            originalUrl = redisTemplate.opsForValue().get(urlCacheKey);
+        } catch (Exception e) {
+            redisTemplate.delete(urlCacheKey);
+        }
         if (StringUtils.isNotBlank(originalUrl)) {
             if (EMPTY_CACHE.equals(originalUrl)) {
                 // 命中空值缓存（应对布隆过滤器以往的误判），直接返回
                 throw new NotFoundException("短链接不存在");
             }
+            log.info("命中 Redis 缓存，originalUrl: {}", originalUrl);
+            // 发送MQ消息，异步记录访问日志到数据库
+            log.info("发送MQ消息，异步记录访问日志到数据库，linkCode: {}", linkCode);
+            Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
+            sendMqMessage(request, linkId);
             return originalUrl; // 命中正常缓存
         }
-
         // 3. 缓存未命中，查询数据库
         // 此处为了防止缓存击穿（并发查 DB），可以加上分布式锁，如 Redisson 的 getLock(cacheKey)
-        RLock lock = redissonClient.getLock(cacheKey);
+        String lockKey = "lock:" + urlCacheKey;
+        RLock lock = redissonClient.getLock(lockKey);
         String url;
         Link link;
         try{
             // 加锁
             lock.lock();
             // 再次检查缓存，防止在获取锁的过程中其他线程已经将数据写入缓存（获取锁后，其他线程将会阻塞等待，从db查询到数据写入缓存后释放锁，其他线程会获取锁，为了防止重复查询数据库，所以需要在获取锁后再一次检查缓存是否有数据）
-            originalUrl = redisTemplate.opsForValue().get(cacheKey);
+            originalUrl = redisTemplate.opsForValue().get(urlCacheKey);
             if (StringUtils.isNotBlank(originalUrl)) {
                 if (EMPTY_CACHE.equals(originalUrl)) {
                     throw new NotFoundException("短链接不存在");
                 }
+                // 发送MQ消息，异步记录访问日志到数据库
+                log.info("获取锁后再次检查，命中 Redis 缓存，originalUrl: {}", originalUrl);
+                log.info("获取锁后再次检查，发送MQ消息，异步记录访问日志到数据库，linkCode: {}", linkCode);
+                Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
+                sendMqMessage(request, linkId);
                 return originalUrl;
             }
             // 查询数据库
+            log.info("缓存未命中，查询数据库，linkCode: {}", linkCode);
             link = lambdaQuery()
                     .eq(Link::getLinkCode, linkCode)
                     .select(Link::getOriginalUrl, Link::getId)
                     .one();
             if (link == null) {
                 // 数据库也不存在（布隆过滤器误判），写入空值，过期时间设短一点（如 5分钟）
-                redisTemplate.opsForValue().set(cacheKey, EMPTY_CACHE, 5, TimeUnit.MINUTES);
+                redisTemplate.opsForValue().set(urlCacheKey, EMPTY_CACHE, 5, TimeUnit.MINUTES);
                 throw new RuntimeException("链接不存在或已失效");
             }
-
             url = link.getOriginalUrl();
-
             // 处理原始URL没有协议头的情况，默认添加http://
             if (!url.startsWith("http://") && !url.startsWith("https://")) {
                 url = "http://" + url;
             }
-
-            // 4. 数据库存在，写入缓存
+            // 4. 数据库存在，同时写入 URL 缓存和 linkId 缓存
             // 设置过期时间：如 1 小时 + (0~10分钟随机数)，防止缓存雪崩
             long expireTime = 3600 + new Random().nextInt(600);
-            redisTemplate.opsForValue().set(cacheKey, link.getOriginalUrl(), expireTime, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(urlCacheKey, url, expireTime, TimeUnit.SECONDS);
+            redisTemplate.opsForValue().set(idCacheKey, link.getId().toString(), expireTime, TimeUnit.SECONDS);
+            log.info("数据库查询到数据，写入 Redis 缓存，cacheKey: {}, url: {}, expireTime: {}秒", urlCacheKey, url, expireTime);
+            log.info("数据库查询到数据，写入 Redis 缓存，cacheKey: {}, linkId: {}, expireTime: {}秒", idCacheKey, link.getId(), expireTime);
         }finally {
             // 释放锁
             lock.unlock();
         }
+        // 发送MQ消息，异步记录访问日志到数据库
+        sendMqMessage(request, link.getId());
+        return url;
+    }
 
-
+    /**
+     * 构建异步消息对象，封装包含访问日志的必要信息，并发送MQ消息，异步保存日志到数据库
+     * @param request 请求对象，包含访问日志的必要信息
+     * @param linkId 访问的链接ID
+     */
+    private void sendMqMessage(HttpServletRequest request, Long linkId) {
         // 构建异步消息对象，封装包含访问日志的必要信息
         RequestInfo requestInfo = new RequestInfo();
         Map<String, String> headers = new HashMap<>();
         Enumeration<String> headerNames = request.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String name = headerNames.nextElement();
-            String value = request.getHeader(name);
-            headers.put(name, value);
+            headers.put(name, request.getHeader(name));
         }
-        // 封装访问日志必要信息
         requestInfo.setHeader(headers);
         requestInfo.setRemoteAddr(request.getRemoteAddr());
-        requestInfo.setLinkId(link.getId());
-
+        requestInfo.setLinkId(linkId);
         // 发送MQ消息，异步保存日志到数据库
         rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, requestInfo);
+    }
 
-        return url;
+    /**
+     * 从缓存获取 linkId，如果缓存中没有，则从数据库查询（仅在缓存中没有 id 时触发，如旧缓存条目）
+     */
+    private Long getLinkIdFromCache(String idCacheKey, String linkCode) {
+        String linkIdStr = redisTemplate.opsForValue().get(idCacheKey);
+        if (linkIdStr != null) {
+            return Long.parseLong(linkIdStr);
+        }
+        // 兜底：从数据库查询 linkId（仅在缓存中没有 id 时触发，如旧缓存条目）
+        Link cacheLink = lambdaQuery()
+                .eq(Link::getLinkCode, linkCode)
+                .select(Link::getId)
+                .one();
+        return cacheLink != null ? cacheLink.getId() : null;
     }
 }

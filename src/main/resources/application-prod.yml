@@ -1,19 +1,21 @@
-Link:
+link:
   datasource:
     host: mysql
     port: 3306
-    database: link_pulse
+    database: link_db
     username: root
-    password: 123
+    password: linkpulse123
   redis:
     host: redis
     port: 6379
-    password: 123
+    password: linkpulse123
     database: 0
     timeout: 2000
   rabbitmq:
     host: rabbitmq
     port: 5672
     username: root
-    password: 123
+    password: linkpulse123
     virtual-host: /linkPulse
+  redirect:
+    url-prefix: "http://47.80.18.27/api/"

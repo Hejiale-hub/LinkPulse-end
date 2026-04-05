@@ -1,10 +1,12 @@
 package com.hejiale;
 
+import com.hejiale.common.Properties.UrlProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.mybatis.spring.annotation.MapperScan;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.core.env.Environment;
 
 import java.net.InetAddress;
@@ -13,6 +15,7 @@ import java.net.UnknownHostException;
 @Slf4j
 @SpringBootApplication
 @MapperScan("com.hejiale.mapper")
+@EnableConfigurationProperties
 public class LinkPulseApplication {
     public static void main(String[] args) throws UnknownHostException {
         SpringApplication app = new SpringApplicationBuilder(LinkPulseApplication.class).build(args);

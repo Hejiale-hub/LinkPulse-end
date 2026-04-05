@@ -24,11 +24,15 @@ public class IpUtils {
         }
     }
 
+
     /**
      * 获取客户端真实 IP
      */
     public static String getIpAddress(RequestInfo request) {
         String ip = request.getHeader().get("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getHeader().get("X-Real-IP");
+        }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getHeader().get("Proxy-Client-IP");
         }
@@ -44,11 +48,9 @@ public class IpUtils {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        // 对于通过多个代理的情况，第一个IP为客户端真实IP,多个IP按照','分割
-        if (ip != null && ip.length() > 15) {
-            if (ip.indexOf(",") > 0) {
-                ip = ip.substring(0, ip.indexOf(","));
-            }
+        // X-Forwarded-For 可能包含多个 IP（经过多个代理），取第一个真实客户端 IP
+        if (ip != null && ip.contains(",")) {
+            ip = ip.substring(0, ip.indexOf(",")).trim();
         }
         return ip;
     }
