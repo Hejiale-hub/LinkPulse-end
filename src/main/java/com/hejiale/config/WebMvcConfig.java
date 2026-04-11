@@ -4,6 +4,7 @@ import com.hejiale.interceptor.JwtTokenInterceptor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurationSupport;
 
@@ -33,5 +34,14 @@ public class WebMvcConfig extends WebMvcConfigurationSupport {
                         "/user/login",
                         "/{linkCode}"
                 );
+    }
+
+    @Override
+    public void addCorsMappings(CorsRegistry registry) {
+        log.info("开始配置跨域访问...");
+        registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                .allowedHeaders("*");
     }
 }

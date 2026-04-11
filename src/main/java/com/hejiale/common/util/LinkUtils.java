@@ -1,7 +1,6 @@
 package com.hejiale.common.util;
 
 
-import com.hejiale.common.constants.UrlConstants;
 import lombok.RequiredArgsConstructor;
 
 @RequiredArgsConstructor

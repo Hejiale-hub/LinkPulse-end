@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hejiale.common.Properties.UrlProperties;
-import com.hejiale.common.constants.UrlConstants;
 import com.hejiale.common.context.UserContext;
 import com.hejiale.common.domain.po.RequestInfo;
 import com.hejiale.common.domain.vo.CountLogVO;
@@ -28,6 +27,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
+import org.springframework.amqp.core.MessageDeliveryMode;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -406,8 +407,15 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         requestInfo.setHeader(headers);
         requestInfo.setRemoteAddr(request.getRemoteAddr());
         requestInfo.setLinkId(linkId);
+
+        String messageId = UUID.randomUUID().toString();
         // 发送MQ消息，异步保存日志到数据库
-        rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, requestInfo);
+        rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, requestInfo, message -> {
+            message.getMessageProperties().setMessageId(messageId);
+            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+            message.getMessageProperties().setHeader(RETRY_COUNT_HEADER, 0);
+            return message;
+        }, new CorrelationData(messageId));
     }
 
     /**

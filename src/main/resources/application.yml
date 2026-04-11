@@ -5,7 +5,7 @@ server:
 
 spring:
   profiles:
-    active: prod # 激活环境配置
+    active: dev # 激活环境配置
   datasource:
     url: jdbc:mysql://${link.datasource.host}:${link.datasource.port}/${link.datasource.database}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
     username: ${link.datasource.username} # 数据库用户名
@@ -20,6 +20,14 @@ spring:
     username: ${link.rabbitmq.username}      # 用户名
     password: ${link.rabbitmq.password}      # 密码
     virtual-host: ${link.rabbitmq.virtual-host}      # 虚拟主机
+    publisher-confirm-type: correlated
+    publisher-returns: true
+    template:
+      mandatory: true
+    listener:
+      simple:
+        acknowledge-mode: manual
+        default-requeue-rejected: false
   data:
     redis:
       host: ${link.redis.host}
@@ -27,10 +35,20 @@ spring:
       password: ${link.redis.password}
       database: ${link.redis.database}
       timeout: ${link.redis.timeout}
+  ai:
+    openai:
+      base-url: "https://dashscope.aliyuncs.com/compatible-mode"
+      api-key: ${OPENAI_API_KEY}
+      chat:
+        options:
+          model: qwen-plus # deepseek-r1
+          temperature: 0.7
+
 
 logging:
   level:
     com.hejiale: debug
+    org.springframework.ai.chat.client.advisor: debug
 
 link:
   jwt:
@@ -40,4 +58,5 @@ link:
     ttl: 360000000
     # 设置前端传递过来的令牌名称
     token-name: token
-  redirect-url-prefix: http://localhost:8080/login
+  redirect:
+    url-prefix: http://localhost:8080/login
