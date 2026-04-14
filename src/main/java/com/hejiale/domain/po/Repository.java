@@ -35,4 +35,12 @@ public class Repository {
     @ApiModelProperty(value = "会话标题")
     @TableField("session_title")
     private String sessionTitle;
+
+    @ApiModelProperty(value = "文件名称（仅pdf类型会有）")
+    @TableField("file_name")
+    private String fileName;
+
+    @ApiModelProperty(value = "文件链接（仅pdf类型会有）")
+    @TableField("file_address")
+    private String fileAddress;
 }

@@ -5,6 +5,7 @@ import com.hejiale.domain.dto.CreateLinkDTO;
 import com.hejiale.domain.dto.MonitorPageDTO;
 import com.hejiale.domain.dto.TitleDistributionDTO;
 import com.hejiale.domain.po.Link;
+import com.hejiale.domain.po.LinkAccessLog;
 import com.hejiale.domain.vo.*;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -33,4 +34,8 @@ public interface ILinkService extends IService<Link> {
     List<MonitorTrendVO> getMonitorTrend(MonitorPageDTO monitorPageDTO);
 
     String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response) throws NotFoundException;
+
+    List<Link> getAllLinkList();
+
+    List<LinkAccessLog> getAllLinkRecords();
 }

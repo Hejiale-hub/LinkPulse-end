@@ -3,7 +3,9 @@ package com.hejiale.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.hejiale.domain.po.Repository;
 import com.hejiale.domain.vo.SessionVO;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 public interface IRepositoryService extends IService<Repository> {
@@ -29,4 +31,10 @@ public interface IRepositoryService extends IService<Repository> {
     void updateSessionTitle(String chatId, String sessionTitle);
 
     SessionVO createChat(String type);
+
+    void savePdfFile(String chatId, MultipartFile file) throws IOException;
+
+    String getPdfAddress(String chatId);
+
+    String getPdfName(String chatId);
 }

@@ -4,10 +4,14 @@ package com.hejiale.controller;
 import com.hejiale.domain.dto.CreateLinkDTO;
 import com.hejiale.domain.dto.MonitorPageDTO;
 import com.hejiale.domain.dto.TitleDistributionDTO;
+import com.hejiale.domain.po.Link;
+import com.hejiale.domain.po.LinkAccessLog;
 import com.hejiale.domain.vo.*;
 import com.hejiale.service.ILinkService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import org.springframework.ai.tool.annotation.Tool;
+import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -31,8 +35,9 @@ public class LinkController {
      * @param createLinkDTO 创建短链接参数
      * @return 短链接列表
      */
+    @Tool(description = "创建短链接")
     @PostMapping("/createCode")
-    public Result<List<LinkCodeVO>> createShortLink(@RequestBody CreateLinkDTO createLinkDTO) {
+    public Result<List<LinkCodeVO>> createShortLink(@RequestBody @ToolParam(description = "创建短链接的对象参数") CreateLinkDTO createLinkDTO) {
         List<LinkCodeVO> linkCodeVOList = shortLinkService.createShortLink(createLinkDTO);
         return Result.success(linkCodeVOList);
     }
@@ -66,5 +71,19 @@ public class LinkController {
     public Result<List<MonitorTrendVO>> getMonitorTrend(MonitorPageDTO monitorPageDTO) {
         List<MonitorTrendVO> monitorTrendVOList = shortLinkService.getMonitorTrend(monitorPageDTO);
         return Result.success(monitorTrendVOList);
+    }
+
+    @Tool(description = "获取当前用户的所有短链接列表")
+    @GetMapping("/getAllLinkList")
+    public Result<List<Link>> getAllLinkList() {
+        List<Link> linkList = shortLinkService.getAllLinkList();
+        return Result.success(linkList);
+    }
+
+    @Tool(description = "查看当前用户的所有短链的访问记录")
+    @GetMapping("/getAllLinkRecords")
+    public Result<List<LinkAccessLog>> getAllLinkRecords() {
+        List<LinkAccessLog> linkAccessLogList = shortLinkService.getAllLinkRecords();
+        return Result.success(linkAccessLogList);
     }
 }

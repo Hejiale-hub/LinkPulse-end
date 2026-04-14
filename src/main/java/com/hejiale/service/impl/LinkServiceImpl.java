@@ -390,6 +390,31 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         return url;
     }
 
+    // 获取当前用户的所有短链接列表
+    @Override
+    public List<Link> getAllLinkList() {
+        return lambdaQuery()
+                .eq(Link::getUserId, UserContext.getUserId())
+                .list();
+    }
+
+    // 获取当前用户的所有短链的访问记录
+    @Override
+    public List<LinkAccessLog> getAllLinkRecords() {
+        List<Long> linkIdList = lambdaQuery()
+                .eq(Link::getUserId, UserContext.getUserId())
+                .select(Link::getId)
+                .list()
+                .stream()
+                .map(Link::getId)
+                .toList();
+
+        List<LinkAccessLog> linkAccessLogList = linkAccessLogService.lambdaQuery()
+                .in(LinkAccessLog::getLinkId, linkIdList)
+                .list();
+        return linkAccessLogList;
+    }
+
     /**
      * 构建异步消息对象，封装包含访问日志的必要信息，并发送MQ消息，异步保存日志到数据库
      * @param request 请求对象，包含访问日志的必要信息

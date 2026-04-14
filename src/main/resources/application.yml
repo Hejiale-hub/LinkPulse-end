@@ -5,9 +5,9 @@ server:
 
 spring:
   profiles:
-    active: dev # 激活环境配置
+    active: local # 激活环境配置
   datasource:
-    url: jdbc:mysql://${link.datasource.host}:${link.datasource.port}/${link.datasource.database}?useUnicode=true&characterEncoding=utf8&useSSL=false&serverTimezone=Asia/Shanghai
+    url: jdbc:mysql://${link.datasource.host}:${link.datasource.port}/${link.datasource.database}?useUnicode=true&characterEncoding=utf-8&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
     username: ${link.datasource.username} # 数据库用户名
     password: ${link.datasource.password} # 数据库密码
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -43,7 +43,14 @@ spring:
         options:
           model: qwen-plus # deepseek-r1
           temperature: 0.7
-
+      embedding:
+        options:
+          model: text-embedding-v4
+    vectorstore:
+      redis:
+        initialize-schema: true
+        prefix: "doc:"
+        index-name: spring-ai-index
 
 logging:
   level:
@@ -58,5 +65,8 @@ link:
     ttl: 360000000
     # 设置前端传递过来的令牌名称
     token-name: token
-  redirect:
-    url-prefix: http://localhost:8080/login
+  alioss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    access-key-id: ${ALIOSS_ACCESS_KEY_ID}
+    access-key-secret: ${ALIOSS_ACCESS_KEY_SECRET}
+    bucket-name: linkcode
