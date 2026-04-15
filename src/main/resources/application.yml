@@ -11,6 +11,10 @@ spring:
     username: ${link.datasource.username} # 数据库用户名
     password: ${link.datasource.password} # 数据库密码
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 10MB        # 单个文件最大10MB
+      max-request-size: 30MB     # 单次请求最大30MB（支持多张图片同时上传）
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss   # 指定返回json日期格式
     time-zone: GMT+8
