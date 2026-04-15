@@ -3,6 +3,7 @@ package com.hejiale.controller;
 import com.hejiale.domain.vo.AiMessageVO;
 import com.hejiale.domain.vo.Result;
 import com.hejiale.domain.vo.SessionVO;
+import com.hejiale.service.IAiService;
 import com.hejiale.service.IRepositoryService;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,11 +24,9 @@ import static org.springframework.ai.chat.memory.ChatMemory.CONVERSATION_ID;
 @RequestMapping("/ai")
 @AllArgsConstructor
 public class AiController {
-    private final ChatClient chatClient;
-    private final ChatClient serviceChatClient;
-    private final ChatClient pdfChatClient;
     private final IRepositoryService repositoryService;
     private final ChatMemory chatMemory;
+    private final IAiService aiService;
 
     /**
      * 创建会话（新建对话窗口）
@@ -45,17 +44,11 @@ public class AiController {
      * @return 模型生成的对话回复
      */
     @PostMapping("/chat")
-    public Result<List<AiMessageVO>> chat(String prompt, String chatId) {
-        // 调用模型对话
-        String content = chatClient.prompt()
-                .user(prompt)
-                .advisors(a -> a.param(CONVERSATION_ID, chatId))
-                .call()
-                .content();
-        AiMessageVO aiMessageVO = new AiMessageVO();
-        aiMessageVO.setContent(content);
-        aiMessageVO.setRole("assistant");
-        return Result.success(List.of(aiMessageVO));
+    public Result<List<AiMessageVO>> chat(@RequestParam("prompt") String prompt,
+                                          @RequestParam("chatId") String chatId,
+                                          @RequestParam(value = "files", required = false) List<MultipartFile> files) {
+        List<AiMessageVO> aiMessageVOList = aiService.chat(prompt, chatId, files);
+        return Result.success(aiMessageVOList);
     }
 
     /**
@@ -66,16 +59,8 @@ public class AiController {
      */
     @PostMapping("/service")
     public Result<List<AiMessageVO>> service(String prompt, String chatId) {
-        // 调用模型对话
-        String content = serviceChatClient.prompt()
-                .user(prompt)
-                .advisors(a -> a.param(CONVERSATION_ID, chatId))
-                .call()
-                .content();
-        AiMessageVO aiMessageVO = new AiMessageVO();
-        aiMessageVO.setContent(content);
-        aiMessageVO.setRole("assistant");
-        return Result.success(List.of(aiMessageVO));
+        List<AiMessageVO> aiMessageVOList = aiService.service(prompt, chatId);
+        return Result.success(aiMessageVOList);
     }
 
     /**
@@ -84,17 +69,8 @@ public class AiController {
      */
     @PostMapping("/pdf")
     public Result<List<AiMessageVO>> pdf(String prompt, String chatId) {
-        // 调用模型对话
-        String content = pdfChatClient.prompt()
-                .user(prompt)
-                .advisors(a -> a.param(CONVERSATION_ID, chatId))
-                .advisors(a -> a.param(FILTER_EXPRESSION, "chatId == '" + chatId + "'"))
-                .call()
-                .content();
-        AiMessageVO aiMessageVO = new AiMessageVO();
-        aiMessageVO.setContent(content);
-        aiMessageVO.setRole("assistant");
-        return Result.success(List.of(aiMessageVO));
+        List<AiMessageVO> aiMessageVOList = aiService.pdf(prompt, chatId);
+        return Result.success(aiMessageVOList);
     }
 
     /**

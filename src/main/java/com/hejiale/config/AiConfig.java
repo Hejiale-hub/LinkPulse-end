@@ -8,6 +8,7 @@ import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.vectorstore.QuestionAnswerAdvisor;
 import org.springframework.ai.chat.memory.ChatMemory;
 import org.springframework.ai.chat.memory.MessageWindowChatMemory;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.openai.OpenAiChatModel;
 import org.springframework.ai.vectorstore.SearchRequest;
 import org.springframework.ai.vectorstore.VectorStore;
@@ -30,6 +31,7 @@ public class AiConfig {
     public ChatClient chatClient(OpenAiChatModel openAiChatModel, ChatMemory chatMemory) {
         return ChatClient
                 .builder(openAiChatModel)
+                .defaultOptions(ChatOptions.builder().model("qwen3.5-omni-plus").build()) // 重新设置使用的模型，覆盖yaml配置中的默认模型
                 .defaultSystem("You are a helpful assistant.")
                 .defaultAdvisors(
                         new SimpleLoggerAdvisor(),
