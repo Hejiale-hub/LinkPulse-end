@@ -7,6 +7,7 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
 
 import java.io.InputStream;
+import java.util.Map;
 
 public class IpUtils {
 
@@ -15,7 +16,7 @@ public class IpUtils {
     static {
         try {
             // 从 classpath 加载 xdb 文件到内存，提高查询性能
-            ClassPathResource resource = new ClassPathResource("ip2region.xdb");
+            ClassPathResource resource = new ClassPathResource("ip2region_v4.xdb");
             InputStream inputStream = resource.getInputStream();
             byte[] cBuff = FileCopyUtils.copyToByteArray(inputStream);
             searcher = Searcher.newWithBuffer(cBuff);
@@ -29,21 +30,22 @@ public class IpUtils {
      * 获取客户端真实 IP
      */
     public static String getIpAddress(RequestInfo request) {
-        String ip = request.getHeader().get("X-Forwarded-For");
+        Map<String, String> headers = request.getHeader();
+        String ip = getHeaderIgnoreCase(headers, "X-Forwarded-For");
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader().get("X-Real-IP");
+            ip = getHeaderIgnoreCase(headers, "X-Real-IP");
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader().get("Proxy-Client-IP");
+            ip = getHeaderIgnoreCase(headers, "Proxy-Client-IP");
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader().get("WL-Proxy-Client-IP");
+            ip = getHeaderIgnoreCase(headers, "WL-Proxy-Client-IP");
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader().get("HTTP_CLIENT_IP");
+            ip = getHeaderIgnoreCase(headers, "HTTP_CLIENT_IP");
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
-            ip = request.getHeader().get("HTTP_X_FORWARDED_FOR");
+            ip = getHeaderIgnoreCase(headers, "HTTP_X_FORWARDED_FOR");
         }
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
@@ -53,6 +55,14 @@ public class IpUtils {
             ip = ip.substring(0, ip.indexOf(",")).trim();
         }
         return ip;
+    }
+
+    private static String getHeaderIgnoreCase(Map<String, String> headers, String name) {
+        String value = headers.get(name);
+        if (value != null) {
+            return value;
+        }
+        return headers.get(name.toLowerCase());
     }
 
     /**

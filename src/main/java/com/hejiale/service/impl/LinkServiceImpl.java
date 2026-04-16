@@ -79,23 +79,21 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         }
         // 根据ID生成linkcode
         String linkCode = LinkUtils.encode(link.getId());
-        // 更新短码回数据库
-        link.setLinkCode(linkCode);
-        updateById(link);
-        // 将linkCode添加到布隆过滤器
-        log.info("将linkCode添加到布隆过滤器，linkCode: {}", linkCode);
-        bloomFilter.add(linkCode);
 
         // 添加链接url前缀
-        StringBuilder codeUrl = new StringBuilder();
-        codeUrl.append(urlProperties.getUrlPrefix());
-        codeUrl.append(linkCode);
+        String codeUrl = urlProperties.getUrlPrefix() + linkCode;
+        // 更新短码回数据库
+        link.setLinkCode(codeUrl);
+        updateById(link);
+        // 将linkCode添加到布隆过滤器
+        log.info("将linkCode添加到布隆过滤器，linkCode: {}", codeUrl);
+        bloomFilter.add(codeUrl);
 
         // 封装
         LinkCodeVO linkCodeVO = new LinkCodeVO();
         List<LinkCodeVO> linkCodeVOList = new ArrayList<>();
         linkCodeVO.setLinkTitle(createLinkDTO.getLinkTitle());
-        linkCodeVO.setLinkCode(codeUrl.toString());
+        linkCodeVO.setLinkCode(codeUrl);
         linkCodeVOList.add(linkCodeVO);
         return linkCodeVOList;
     }
@@ -307,15 +305,17 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
      */
     @Override
     public String redirect(String linkCode, HttpServletRequest request, HttpServletResponse response) throws NotFoundException {
-        // 根据shortCode查询Link表获取原始URL ,todo redis缓存查询
+        // 根据shortCode查询Link表获取原始URL
         // 1. 布隆过滤器拦截：如果判断不存在，则直接返回不存在
-        if (!bloomFilter.contains(linkCode)) {
-            log.info("布隆过滤器判断短链接不存在，linkCode: {}", linkCode);
+        // 首先拿到请求路径参数的linkcode，拼接成短链接，再去布隆过滤器和缓存中查询
+        String codeUrl = urlProperties.getUrlPrefix() + linkCode;
+        if (!bloomFilter.contains(codeUrl)) {
+            log.info("布隆过滤器判断短链接不存在，linkCode: {}", codeUrl);
             throw new NotFoundException("布隆过滤器判断短链接不存在");
         }
-        log.info("布隆过滤器判断短链接可能存在，继续查询缓存和数据库，linkCode: {}", linkCode);
-        String urlCacheKey = LINK_CODE_PREFIX_CACHE_KEY + linkCode;
-        String idCacheKey = LINK_ID_PREFIX_CACHE_KEY + linkCode;
+        log.info("布隆过滤器判断短链接可能存在，继续查询缓存和数据库，linkCode: {}", codeUrl);
+        String urlCacheKey = LINK_CODE_PREFIX_CACHE_KEY + codeUrl;
+        String idCacheKey = LINK_ID_PREFIX_CACHE_KEY + codeUrl;
         // 2. 查询 Redis 缓存
         String originalUrl = null;
         log.info("查询 Redis 缓存，cacheKey: {}", urlCacheKey);
@@ -331,7 +331,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
             }
             log.info("命中 Redis 缓存，originalUrl: {}", originalUrl);
             // 发送MQ消息，异步记录访问日志到数据库
-            log.info("发送MQ消息，异步记录访问日志到数据库，linkCode: {}", linkCode);
+            log.info("发送MQ消息，异步记录访问日志到数据库，linkCode: {}", codeUrl);
             Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
             sendMqMessage(request, linkId);
             return originalUrl; // 命中正常缓存
@@ -353,15 +353,15 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
                 }
                 // 发送MQ消息，异步记录访问日志到数据库
                 log.info("获取锁后再次检查，命中 Redis 缓存，originalUrl: {}", originalUrl);
-                log.info("获取锁后再次检查，发送MQ消息，异步记录访问日志到数据库，linkCode: {}", linkCode);
+                log.info("获取锁后再次检查，发送MQ消息，异步记录访问日志到数据库，linkCode: {}", codeUrl);
                 Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
                 sendMqMessage(request, linkId);
                 return originalUrl;
             }
             // 查询数据库
-            log.info("缓存未命中，查询数据库，linkCode: {}", linkCode);
+            log.info("缓存未命中，查询数据库，linkCode: {}", codeUrl);
             link = lambdaQuery()
-                    .eq(Link::getLinkCode, linkCode)
+                    .eq(Link::getLinkCode, codeUrl)
                     .select(Link::getOriginalUrl, Link::getId)
                     .one();
             if (link == null) {

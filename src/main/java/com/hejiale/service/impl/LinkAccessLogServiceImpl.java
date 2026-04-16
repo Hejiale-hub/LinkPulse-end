@@ -143,15 +143,15 @@ public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, L
 
         // ===== IP 解析（省市） =====
         try {
-            // 2. 解析 IP 属地 (ip2region 返回格式例如：中国|0|广东省|深圳市|电信)
+            // 2. 解析 IP 属地 (ip2region 返回格式例如：中国|区域|广东省|深圳市|电信)
             String regionStr = IpUtils.getRegion(ip);
             String province = "未知";
             String city = "未知";
             if (regionStr != null && regionStr.contains("|")) {
                 String[] regions = regionStr.split("\\|");
                 if (regions.length >= 4) {
-                    province = regions[2]; // 省份
-                    city = regions[3];     // 城市
+                    province = regions[1]; // 省份
+                    city = regions[2];     // 城市
                 }
             }
             log.setProvince(province);

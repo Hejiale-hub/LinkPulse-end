@@ -58,8 +58,8 @@ spring:
 
 logging:
   level:
-    com.hejiale: debug
-    org.springframework.ai.chat.client.advisor: debug
+    com.hejiale: ${link.logging.level.com.hejiale}
+    org.springframework.ai.chat.client.advisor: ${link.logging.level.org.springframework.ai.chat.client.advisor}
 
 link:
   jwt:

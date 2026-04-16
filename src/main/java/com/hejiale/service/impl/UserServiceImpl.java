@@ -2,7 +2,7 @@ package com.hejiale.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.hejiale.common.Properties.JwtProperties;
-import com.hejiale.common.exception.LoginFailedException;
+import com.hejiale.common.exception.AccountException;
 import com.hejiale.common.util.JwtUtils;
 import com.hejiale.domain.po.User;
 import com.hejiale.domain.vo.UserLoginVO;
@@ -40,14 +40,14 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 .eq(User::getAccount, user.getAccount())
                 .exists();
         if (exists) {
-            throw new IllegalArgumentException("账号已存在");
+            throw new AccountException("账号已存在");
         }
         //设置默认用户名
         user.setUsername("LinkP用户" + System.currentTimeMillis());
         // 保存用户到数据库
         boolean save = save(user);
         if (!save) {
-            throw new RuntimeException("注册失败");
+            throw new AccountException("注册失败");
         }
     }
 
@@ -63,7 +63,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements IU
                 .eq(User::getPassword, user.getPassword())
                 .one();
         if (dbUser == null) {
-            throw new LoginFailedException("账号或密码错误");
+            throw new AccountException("账号或密码错误");
         }
         // 登录成功，下发JWT令牌
         Map<String, Object> claims = new HashMap<>();

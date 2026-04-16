@@ -4,18 +4,22 @@ link:
     port: 3306
     database: link_db
     username: root
-    password: linkpulse123
+    password: ${DATA_PASSWORD}
   redis:
     host: 192.168.150.101
     port: 6379
-    password: linkpulse123
+    password: ${DATA_PASSWORD}
     database: 0
     timeout: 2000
   rabbitmq:
     host: 192.168.150.101
     port: 5672
     username: root
-    password: linkpulse123
+    password: ${DATA_PASSWORD}
     virtual-host: /linkPulse
   redirect:
     url-prefix: "http://localhost:8080/"
+  logging:
+    level:
+      com.hejiale: debug
+      org.springframework.ai.chat.client.advisor: debug
