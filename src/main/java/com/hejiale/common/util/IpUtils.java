@@ -2,6 +2,7 @@ package com.hejiale.common.util;
 
 import com.hejiale.common.domain.po.RequestInfo;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.util.StringUtils;
 import org.lionsoul.ip2region.xdb.Searcher;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.util.FileCopyUtils;
@@ -27,7 +28,33 @@ public class IpUtils {
 
 
     /**
-     * 获取客户端真实 IP
+     * 获取客户端真实 IP（Servlet 请求，用于 Filter / 拦截器）
+     */
+    public static String getIpAddress(HttpServletRequest request) {
+        String ip = headerFirstNonBlank(request, "X-Forwarded-For");
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = headerFirstNonBlank(request, "X-Real-IP");
+        }
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = headerFirstNonBlank(request, "Proxy-Client-IP");
+        }
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = headerFirstNonBlank(request, "WL-Proxy-Client-IP");
+        }
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = headerFirstNonBlank(request, "HTTP_CLIENT_IP");
+        }
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = headerFirstNonBlank(request, "HTTP_X_FORWARDED_FOR");
+        }
+        if (!StringUtils.hasText(ip) || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return normalizeForwardedChain(ip);
+    }
+
+    /**
+     * 获取客户端真实 IP，用于重定向业务逻辑中（RequestInfo 请求对象）
      */
     public static String getIpAddress(RequestInfo request) {
         Map<String, String> headers = request.getHeader();
@@ -50,9 +77,17 @@ public class IpUtils {
         if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
             ip = request.getRemoteAddr();
         }
-        // X-Forwarded-For 可能包含多个 IP（经过多个代理），取第一个真实客户端 IP
+        return normalizeForwardedChain(ip);
+    }
+
+    private static String headerFirstNonBlank(HttpServletRequest request, String name) {
+        String v = request.getHeader(name);
+        return v != null ? v.trim() : null;
+    }
+
+    private static String normalizeForwardedChain(String ip) {
         if (ip != null && ip.contains(",")) {
-            ip = ip.substring(0, ip.indexOf(",")).trim();
+            return ip.substring(0, ip.indexOf(',')).trim();
         }
         return ip;
     }

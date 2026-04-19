@@ -62,6 +62,14 @@ logging:
     org.springframework.ai.chat.client.advisor: ${link.logging.level.org.springframework.ai.chat.client.advisor}
 
 link:
+  visitor-tracking:
+    # 若 Nginx 去掉 /api 再转发，后端路径无 /api，保持下面两项默认即可。
+    # 若 Nginx 完整保留 /api 路径转发到 Spring，则 servlet-path-prefix: /api 且可设 record-only-under-prefix: true
+    servlet-path-prefix: ""
+    record-only-under-prefix: false
+    sync-enabled: true
+    # 当天 Redis → MySQL 快照间隔（毫秒），不删 Redis
+    sync-fixed-rate-ms: 300000
   jwt:
     # 设置 jwt 签名加密时使用的秘钥
     secret-key: linkPulse-secretKey-2026-secure-key!

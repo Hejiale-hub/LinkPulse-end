@@ -27,6 +27,11 @@ public class JwtTokenInterceptor implements HandlerInterceptor {
      *
      */
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+        // 校验jwt令牌
+        return jwtCheck(request, response, handler);
+    }
+
+    private boolean jwtCheck(HttpServletRequest request, HttpServletResponse response, Object handler) {
         //判断当前拦截到的是Controller的方法还是其他资源
         if (!(handler instanceof HandlerMethod)) {
             //当前拦截到的不是动态方法，直接放行

@@ -19,6 +19,10 @@ link:
     virtual-host: /linkPulse
   redirect:
     url-prefix: "http://47.80.18.27/api/"
+  visitor-tracking:
+    # Nginx proxy_pass 已去掉 /api，后端看到的是 /user/... 等非前缀路径，此处保持默认即可
+    servlet-path-prefix: ""
+    record-only-under-prefix: false
   logging:
     level:
       com.hejiale: info

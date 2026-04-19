@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hejiale.mapper.VisitorDayStatMapper">
+
+    <insert id="upsertBatch">
+        INSERT INTO visitor_day_stat (ip, visit_date, visit_count)
+        VALUES
+        <foreach collection="list" item="e" separator=",">
+            (#{e.ip}, #{e.visitDate}, #{e.visitCount})
+        </foreach>
+        ON DUPLICATE KEY UPDATE visit_count = VALUES(visit_count)
+    </insert>
+</mapper>

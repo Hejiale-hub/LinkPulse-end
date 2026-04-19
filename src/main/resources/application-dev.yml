@@ -4,21 +4,24 @@ link:
     port: 3306
     database: link_db
     username: root
-    password: ${DATA_PASSWORD}
+    password: linkpulse123
   redis:
     host: redis
     port: 6379
-    password: ${DATA_PASSWORD}
+    password: linkpulse123
     database: 0
     timeout: 2000
   rabbitmq:
     host: rabbitmq
     port: 5672
     username: root
-    password: ${DATA_PASSWORD}
+    password: linkpulse123
     virtual-host: /linkPulse
   redirect:
     url-prefix: "http://192.168.150.101/api/"
+  visitor-tracking:
+    servlet-path-prefix: ""
+    record-only-under-prefix: false
   logging:
     level:
       com.hejiale: info
