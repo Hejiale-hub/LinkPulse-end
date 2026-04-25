@@ -6,6 +6,8 @@ import com.hejiale.service.IVisitorStatService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.data.redis.core.script.DefaultRedisScript;
+import org.springframework.data.redis.core.script.RedisScript;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.util.StringUtils;
@@ -16,9 +18,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.hejiale.common.constants.RedisConstants.VISITOR_DAY_KEY_PREFIX;
 
@@ -30,10 +32,21 @@ public class VisitorStatServiceImpl implements IVisitorStatService {
     private static final ZoneId ZONE_SH = ZoneId.of("Asia/Shanghai");
     private static final DateTimeFormatter DAY_KEY = DateTimeFormatter.BASIC_ISO_DATE;
     private static final int UPSERT_CHUNK = 500;
-
     private final StringRedisTemplate redisTemplate;
     private final VisitorDayStatMapper visitorDayStatMapper;
     private final TransactionTemplate transactionTemplate;
+    /**
+     * HINCRBY + EXPIRE 合并为一次 EVAL，避免两次往返；
+     * 同时绕开 Redisson + spring-data-redis 的 pExpire 栈溢出兼容性问题。
+     */
+    private static final RedisScript<Long> RECORD_VISIT_SCRIPT = new DefaultRedisScript<>(
+            // call表示执行Redis原生命令，HINCRBY表示对哈希表中的字段值进行递增操作，
+            // KEYS[1]表示第一个键（即visitor:day:{yyyyMMdd}，如果传入了多个键，那么就需要写循环便利的lua语法），
+            // ARGV[1]表示第一个参数（即IP地址），1表示递增的值
+            "local v = redis.call('HINCRBY', KEYS[1], ARGV[1], 1) " +
+                    "redis.call('EXPIRE', KEYS[1], ARGV[2]) " +
+                    "return v",
+            Long.class);
 
     @Override
     public void recordVisit(String clientIp) {
@@ -46,9 +59,12 @@ public class VisitorStatServiceImpl implements IVisitorStatService {
         }
         LocalDate today = LocalDate.now(ZONE_SH);
         String key = VISITOR_DAY_KEY_PREFIX + today.format(DAY_KEY);
-        redisTemplate.opsForHash().increment(key, ip, 1L);
         long ttlSeconds = secondsUntilEndOfDayPlusOneDay(ZONE_SH);
-        redisTemplate.expire(key, ttlSeconds, TimeUnit.SECONDS);
+        redisTemplate.execute(
+                RECORD_VISIT_SCRIPT, // 要执行的 Lua 脚本
+                Collections.singletonList(key), // 脚本中使用的 Redis 键列表，这里只有一个键，即 visitor:day:{yyyyMMdd}
+                ip, // ARGV[1]，即要递增的字段（IP地址）
+                Long.toString(ttlSeconds)); // ARGV[2]，即过期时间（秒）
     }
 
     private static long secondsUntilEndOfDayPlusOneDay(ZoneId zone) {

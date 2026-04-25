@@ -27,10 +27,10 @@ spring:
     publisher-confirm-type: correlated
     publisher-returns: true
     template:
-      mandatory: true
+      mandatory: true # 开启消息不可达时的回退机制，mandatory=true表示如果消息无法路由到队列，则会触发ReturnCallback回调函数
     listener:
       simple:
-        acknowledge-mode: manual
+        acknowledge-mode: manual # 消息确认模式，默认是自动（auto），改为手动（manual）后需要在代码中手动确认消息
         default-requeue-rejected: false
   data:
     redis:
@@ -69,7 +69,7 @@ link:
     record-only-under-prefix: false
     sync-enabled: true
     # 当天 Redis → MySQL 快照间隔（毫秒），不删 Redis
-    sync-fixed-rate-ms: 300000
+    sync-fixed-rate-ms: 7200000
   jwt:
     # 设置 jwt 签名加密时使用的秘钥
     secret-key: linkPulse-secretKey-2026-secure-key!
