@@ -27,3 +27,5 @@ link:
     level:
       com.hejiale: info
       org.springframework.ai.chat.client.advisor: info
+  cors:
+    allowed-origins: "https://linkcode.oss-cn-beijing.aliyuncs.com"

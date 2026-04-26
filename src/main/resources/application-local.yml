@@ -23,3 +23,5 @@ link:
     level:
       com.hejiale: debug
       org.springframework.ai.chat.client.advisor: debug
+  cors:
+    allowed-origins: "*"
