@@ -11,6 +11,7 @@ import com.hejiale.domain.vo.*;
 import com.hejiale.service.ILinkService;
 import io.swagger.annotations.Api;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,7 @@ import java.util.List;
  * @author hejiale
  * @since 2026-03-17
  */
+@Slf4j
 @Api(tags = "link相关接口")
 @RequiredArgsConstructor
 @RestController
@@ -47,7 +49,12 @@ public class LinkController {
      */
     @GetMapping("/monitorList")
     public Result<PageVO<MonitorListVO>> getLinkMonitorListPage(MonitorPageDTO monitorPageDTO) {
+        // 统计接口执行时间，单位毫秒
+        long startTime = System.currentTimeMillis();
         PageVO<MonitorListVO> monitorListPageVO = shortLinkService.getLinkMonitorListPage(monitorPageDTO);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        log.info("getLinkMonitorListPage接口执行时间：{} ms", duration);
         return Result.success(monitorListPageVO);
     }
 
@@ -56,7 +63,12 @@ public class LinkController {
      */
     @GetMapping("/monitorDetailRecords")
     public Result<PageVO<MonitorListDetialsVO>> getLinkMonitorDetailRecords(MonitorPageDTO monitorPageDTO) {
+        // 统计接口执行时间，单位毫秒
+        long startTime = System.currentTimeMillis();
         PageVO<MonitorListDetialsVO> MonitorDetailPageVO = shortLinkService.getLinkMonitorDetailRecords(monitorPageDTO);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        log.info("getLinkMonitorDetailRecords接口执行时间：{} ms", duration);
         return Result.success(MonitorDetailPageVO);
     }
     /**
@@ -64,13 +76,23 @@ public class LinkController {
      */
     @GetMapping("/monitorLinkTitleDistribution")
     public Result<List<TitleDistributionVO>> getTitleDistribution(TitleDistributionDTO titleDistributionDTO) {
+        // 统计接口执行时间，单位毫秒
+        long startTime = System.currentTimeMillis();
         List<TitleDistributionVO> titleDistributionVOList = shortLinkService.getTitleDistribution(titleDistributionDTO);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        log.info("getTitleDistribution接口执行时间：{} ms", duration);
         return Result.success(titleDistributionVOList);
     }
 
     @GetMapping("/monitorTrend")
     public Result<List<MonitorTrendVO>> getMonitorTrend(MonitorPageDTO monitorPageDTO) {
+        // 统计接口执行时间，单位毫秒
+        long startTime = System.currentTimeMillis();
         List<MonitorTrendVO> monitorTrendVOList = shortLinkService.getMonitorTrend(monitorPageDTO);
+        long endTime = System.currentTimeMillis();
+        long duration = endTime - startTime;
+        log.info("getMonitorTrend接口执行时间：{} ms", duration);
         return Result.success(monitorTrendVOList);
     }
 
