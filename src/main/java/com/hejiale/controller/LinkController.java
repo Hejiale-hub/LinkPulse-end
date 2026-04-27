@@ -2,6 +2,7 @@ package com.hejiale.controller;
 
 
 import com.hejiale.domain.dto.CreateLinkDTO;
+import com.hejiale.domain.dto.DeleteLinksDTO;
 import com.hejiale.domain.dto.MonitorPageDTO;
 import com.hejiale.domain.dto.TitleDistributionDTO;
 import com.hejiale.domain.po.Link;
@@ -85,5 +86,15 @@ public class LinkController {
     public Result<List<LinkAccessLog>> getAllLinkRecords() {
         List<LinkAccessLog> linkAccessLogList = shortLinkService.getAllLinkRecords();
         return Result.success(linkAccessLogList);
+    }
+
+    /**
+     * 删除短链接
+     */
+    @Tool(description = "删除短链接")
+    @DeleteMapping("/deleteByLinkIds")
+    public Result<String> deleteLink(@RequestBody DeleteLinksDTO deleteLinksDTO) {
+        shortLinkService.deleteByLinkIds(deleteLinksDTO.getLinkIds());
+        return Result.success();
     }
 }

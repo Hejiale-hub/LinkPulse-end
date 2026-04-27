@@ -415,6 +415,16 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         return linkAccessLogList;
     }
 
+    @Override
+    public void deleteByLinkIds(List<Long> linkIds) {
+        // 删除 Link 表中的记录
+        removeByIds(linkIds);
+        // 删除 LinkAccessLog 表中对应的访问记录
+        linkAccessLogService.lambdaUpdate()
+                .in(LinkAccessLog::getLinkId, linkIds)
+                .remove();
+    }
+
     /**
      * 构建异步消息对象，封装包含访问日志的必要信息，并发送MQ消息，异步保存日志到数据库
      * @param request 请求对象，包含访问日志的必要信息

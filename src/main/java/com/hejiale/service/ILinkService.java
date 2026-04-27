@@ -38,4 +38,6 @@ public interface ILinkService extends IService<Link> {
     List<Link> getAllLinkList();
 
     List<LinkAccessLog> getAllLinkRecords();
+
+    void deleteByLinkIds(List<Long> linkIds);
 }
