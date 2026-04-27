@@ -26,6 +26,12 @@ public class GlobalExceptionHandler {
         return Result.error(ex.getMessage());
     }
 
+    @ExceptionHandler
+    public Result<Exception> exceptionHandler(Exception ex){
+        log.error("服务器内部异常", ex);
+        return Result.error(500, "服务器内部异常");
+    }
+
     /**
      * 捕获文件上传超出大小限制异常
      */
