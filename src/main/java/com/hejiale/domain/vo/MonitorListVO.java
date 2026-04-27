@@ -1,6 +1,8 @@
 package com.hejiale.domain.vo;
 
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 import lombok.Data;
 
 import java.time.LocalDateTime;
@@ -8,6 +10,7 @@ import java.util.List;
 
 @Data
 public class MonitorListVO {
+    @JsonSerialize(using = ToStringSerializer.class)
     private Long linkId;
     private String linkCode;            // 短链接
     private String linkTitle;          // 链接标题

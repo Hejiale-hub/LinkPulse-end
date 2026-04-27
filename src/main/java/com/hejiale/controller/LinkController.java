@@ -93,7 +93,7 @@ public class LinkController {
      */
     @Tool(description = "删除短链接")
     @DeleteMapping("/deleteByLinkIds")
-    public Result<String> deleteLink(@RequestBody DeleteLinksDTO deleteLinksDTO) {
+    public Result<String> deleteLink(@RequestBody @ToolParam(description = "删除短链接接口的对象参数") DeleteLinksDTO deleteLinksDTO) {
         shortLinkService.deleteByLinkIds(deleteLinksDTO.getLinkIds());
         return Result.success();
     }
