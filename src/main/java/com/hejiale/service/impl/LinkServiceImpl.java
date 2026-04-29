@@ -27,9 +27,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RBloomFilter;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.springframework.amqp.core.MessageDeliveryMode;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -58,7 +55,7 @@ import static com.hejiale.common.constants.RedisConstants.*;
 public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements ILinkService {
     private final ILinkAccessLogService linkAccessLogService;
     private final LinkAccessLogMapper linkAccessLogMapper;
-    private final RabbitTemplate rabbitTemplate;
+    // private final RabbitTemplate rabbitTemplate;
     private final RBloomFilter<String> bloomFilter;
     private final StringRedisTemplate redisTemplate;
     private final RedissonClient redisson;
@@ -330,10 +327,25 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
                 throw new NotFoundException("短链接不存在");
             }
             log.info("命中 Redis 缓存，originalUrl: {}", originalUrl);
-            // 发送MQ消息，异步记录访问日志到数据库
-            log.info("发送MQ消息，异步记录访问日志到数据库，linkCode: {}", codeUrl);
+
             Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
-            sendMqMessage(request, linkId);
+
+            // 方案一：使用mq记录访问信息
+            // 发送MQ消息，异步记录访问日志到数据库
+            // log.info("发送MQ消息，异步记录访问日志到数据库，linkCode: {}", codeUrl);
+            //sendMqMessage(request, linkId);
+
+            // 方案二：使用异步线程记录访问日志
+            new Thread(() -> {
+                log.info("链接被访问！异步线程记录访问日志，linkId: {}", linkId);
+                if (linkId != null) {
+                    // 获取访问日志的必要信息，封装成 RequestInfo 对象
+                    RequestInfo requestInfo = getRequestInfo(request, linkId);
+                    // 异步记录访问日志到数据库
+                    linkAccessLogService.asyncRecord(requestInfo);
+                }
+            }).start();
+
             return originalUrl; // 命中正常缓存
         }
         // 3. 缓存未命中，查询数据库
@@ -355,7 +367,18 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
                 log.info("获取锁后再次检查，命中 Redis 缓存，originalUrl: {}", originalUrl);
                 log.info("获取锁后再次检查，发送MQ消息，异步记录访问日志到数据库，linkCode: {}", codeUrl);
                 Long linkId = getLinkIdFromCache(idCacheKey, linkCode);
-                sendMqMessage(request, linkId);
+                // 方案一：使用mq记录访问信息（本项目暂不使用）
+                // sendMqMessage(request, linkId);
+                // 方案二：使用异步线程记录访问日志
+                new Thread(() -> {
+                    log.info("链接被访问！异步线程记录访问日志，linkId: {}", linkId);
+                    if (linkId != null) {
+                        // 获取访问日志的必要信息，封装成 RequestInfo 对象
+                        RequestInfo requestInfo = getRequestInfo(request, linkId);
+                        // 异步记录访问日志到数据库
+                        linkAccessLogService.asyncRecord(requestInfo);
+                    }
+                }).start();
                 return originalUrl;
             }
             // 查询数据库
@@ -385,8 +408,19 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
             // 释放锁
             lock.unlock();
         }
-        // 发送MQ消息，异步记录访问日志到数据库
-        sendMqMessage(request, link.getId());
+        // 方案一：使用mq记录访问信息（本项目暂不使用）
+        // sendMqMessage(request, link.getId());
+
+        // 方案二：使用异步线程记录访问日志
+        new Thread(() -> {
+            log.info("链接被访问！异步线程记录访问日志，linkId: {}", link.getId());
+            if (link.getId() != null) {
+                // 获取访问日志的必要信息，封装成 RequestInfo 对象
+                RequestInfo requestInfo = getRequestInfo(request, link.getId());
+                // 异步记录访问日志到数据库
+                linkAccessLogService.asyncRecord(requestInfo);
+            }
+        }).start();
         return url;
     }
 
@@ -430,8 +464,23 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
      * @param request 请求对象，包含访问日志的必要信息
      * @param linkId 访问的链接ID
      */
-    private void sendMqMessage(HttpServletRequest request, Long linkId) {
-        // 构建异步消息对象，封装包含访问日志的必要信息
+    // 由于服务器资源有限，暂时不使用消息队列，以下代码已注释掉，后续有条件时取消注释即可使用向mq发送异步记录消息 ！！！！
+//    private void sendMqMessage(HttpServletRequest request, Long linkId) {
+//        // 构建异步消息对象，封装包含访问日志的必要信息
+//        RequestInfo requestInfo = getRequestInfo(request, linkId);
+//
+//        String messageId = UUID.randomUUID().toString();
+//        // 发送MQ消息，异步保存日志到数据库
+//        rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, requestInfo, message -> {
+//            message.getMessageProperties().setMessageId(messageId);
+//            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+//            message.getMessageProperties().setHeader(RETRY_COUNT_HEADER, 0);
+//            return message;
+//        }, new CorrelationData(messageId));
+//    }
+
+    // 构建异步消息对象，封装包含访问日志的必要信息
+    private static RequestInfo getRequestInfo(HttpServletRequest request, Long linkId) {
         RequestInfo requestInfo = new RequestInfo();
         Map<String, String> headers = new HashMap<>();
         Enumeration<String> headerNames = request.getHeaderNames();
@@ -442,15 +491,7 @@ public class LinkServiceImpl extends ServiceImpl<LinkMapper, Link> implements IL
         requestInfo.setHeader(headers);
         requestInfo.setRemoteAddr(request.getRemoteAddr());
         requestInfo.setLinkId(linkId);
-
-        String messageId = UUID.randomUUID().toString();
-        // 发送MQ消息，异步保存日志到数据库
-        rabbitTemplate.convertAndSend(MONITOR_EXCHANGE, LOGRECORD_ROUTING_KEY, requestInfo, message -> {
-            message.getMessageProperties().setMessageId(messageId);
-            message.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-            message.getMessageProperties().setHeader(RETRY_COUNT_HEADER, 0);
-            return message;
-        }, new CorrelationData(messageId));
+        return requestInfo;
     }
 
     /**

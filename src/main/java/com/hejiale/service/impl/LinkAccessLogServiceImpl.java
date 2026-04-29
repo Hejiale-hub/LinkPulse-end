@@ -8,15 +8,9 @@ import com.hejiale.domain.po.LinkAccessLog;
 import com.hejiale.domain.vo.LogCountVO;
 import com.hejiale.mapper.LinkAccessLogMapper;
 import com.hejiale.service.ILinkAccessLogService;
-import com.rabbitmq.client.Channel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import nl.basjes.parse.useragent.UserAgent;
-import org.springframework.amqp.core.Message;
-import org.springframework.amqp.core.MessageDeliveryMode;
-import org.springframework.amqp.rabbit.annotation.RabbitListener;
-import org.springframework.amqp.rabbit.connection.CorrelationData;
-import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -40,7 +34,7 @@ import static com.hejiale.common.constants.MqConstants.*;
 @Service
 public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, LinkAccessLog> implements ILinkAccessLogService {
     private final LinkAccessLogMapper LogMapper;
-    private final RabbitTemplate rabbitTemplate;
+    // private final RabbitTemplate rabbitTemplate;
 
     /**
      * 根据linkId获取访问日志
@@ -73,61 +67,62 @@ public class LinkAccessLogServiceImpl extends ServiceImpl<LinkAccessLogMapper, L
         }
     }
 
-    @RabbitListener(queues = LOGRECORD_QUEUE, containerFactory = "rabbitListenerContainerFactory")
-    public void asyncRecordWithAck(RequestInfo requestInfo, Message message, Channel channel) throws IOException {
-        long deliveryTag = message.getMessageProperties().getDeliveryTag();
-        try {
-            asyncRecord(requestInfo);
-            channel.basicAck(deliveryTag, false);
-        } catch (Exception e) {
-            int currentRetryCount = getRetryCount(message);
-            if (currentRetryCount < MAX_RETRY_COUNT) {
-                int nextRetryCount = currentRetryCount + 1;
-                String messageId = resolveMessageId(message);
-                rabbitTemplate.convertAndSend(RETRY_EXCHANGE, LOGRECORD_RETRY_ROUTING_KEY, requestInfo, msg -> {
-                    msg.getMessageProperties().setMessageId(messageId);
-                    msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                    msg.getMessageProperties().setHeader(RETRY_COUNT_HEADER, nextRetryCount);
-                    return msg;
-                }, new CorrelationData(messageId));
-                channel.basicAck(deliveryTag, false);
-                log.warn("访问日志消费失败，发送到重试队列, retryCount={}, messageId={}, error={}",
-                        nextRetryCount, messageId, e.getMessage());
-                return;
-            }
-            String messageId = resolveMessageId(message);
-            rabbitTemplate.convertAndSend(DLX_EXCHANGE, LOGRECORD_DLQ_ROUTING_KEY, requestInfo, msg -> {
-                msg.getMessageProperties().setMessageId(messageId);
-                msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
-                msg.getMessageProperties().setHeader(RETRY_COUNT_HEADER, currentRetryCount);
-                return msg;
-            }, new CorrelationData(messageId));
-            channel.basicAck(deliveryTag, false);
-            log.error("访问日志消费失败并进入DLQ, retryCount={}, messageId={}, error={}",
-                    currentRetryCount, messageId, e.getMessage(), e);
-        }
-    }
-
-    private int getRetryCount(Message message) {
-        Map<String, Object> headers = message.getMessageProperties().getHeaders();
-        Object retryHeader = headers.get(RETRY_COUNT_HEADER);
-        if (retryHeader instanceof Number number) {
-            return number.intValue();
-        }
-        if (retryHeader instanceof String retryStr) {
-            try {
-                return Integer.parseInt(retryStr);
-            } catch (NumberFormatException ignore) {
-                return 0;
-            }
-        }
-        return 0;
-    }
-
-    private String resolveMessageId(Message message) {
-        String messageId = message.getMessageProperties().getMessageId();
-        return messageId == null || messageId.isBlank() ? UUID.randomUUID().toString() : messageId;
-    }
+    // RabbitMQ todo 消息监听消费者，由于服务器资源有限，暂时不使用消息队列，以下代码已注释掉，后续有条件时取消注释即可使用mq记录访问日志 ！！！！
+//    @RabbitListener(queues = LOGRECORD_QUEUE, containerFactory = "rabbitListenerContainerFactory")
+//    public void asyncRecordWithAck(RequestInfo requestInfo, Message message, Channel channel) throws IOException {
+//        long deliveryTag = message.getMessageProperties().getDeliveryTag();
+//        try {
+//            asyncRecord(requestInfo);
+//            channel.basicAck(deliveryTag, false);
+//        } catch (Exception e) {
+//            int currentRetryCount = getRetryCount(message);
+//            if (currentRetryCount < MAX_RETRY_COUNT) {
+//                int nextRetryCount = currentRetryCount + 1;
+//                String messageId = resolveMessageId(message);
+//                rabbitTemplate.convertAndSend(RETRY_EXCHANGE, LOGRECORD_RETRY_ROUTING_KEY, requestInfo, msg -> {
+//                    msg.getMessageProperties().setMessageId(messageId);
+//                    msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+//                    msg.getMessageProperties().setHeader(RETRY_COUNT_HEADER, nextRetryCount);
+//                    return msg;
+//                }, new CorrelationData(messageId));
+//                channel.basicAck(deliveryTag, false);
+//                log.warn("访问日志消费失败，发送到重试队列, retryCount={}, messageId={}, error={}",
+//                        nextRetryCount, messageId, e.getMessage());
+//                return;
+//            }
+//            String messageId = resolveMessageId(message);
+//            rabbitTemplate.convertAndSend(DLX_EXCHANGE, LOGRECORD_DLQ_ROUTING_KEY, requestInfo, msg -> {
+//                msg.getMessageProperties().setMessageId(messageId);
+//                msg.getMessageProperties().setDeliveryMode(MessageDeliveryMode.PERSISTENT);
+//                msg.getMessageProperties().setHeader(RETRY_COUNT_HEADER, currentRetryCount);
+//                return msg;
+//            }, new CorrelationData(messageId));
+//            channel.basicAck(deliveryTag, false);
+//            log.error("访问日志消费失败并进入DLQ, retryCount={}, messageId={}, error={}",
+//                    currentRetryCount, messageId, e.getMessage(), e);
+//        }
+//    }
+//
+//    private int getRetryCount(Message message) {
+//        Map<String, Object> headers = message.getMessageProperties().getHeaders();
+//        Object retryHeader = headers.get(RETRY_COUNT_HEADER);
+//        if (retryHeader instanceof Number number) {
+//            return number.intValue();
+//        }
+//        if (retryHeader instanceof String retryStr) {
+//            try {
+//                return Integer.parseInt(retryStr);
+//            } catch (NumberFormatException ignore) {
+//                return 0;
+//            }
+//        }
+//        return 0;
+//    }
+//
+//    private String resolveMessageId(Message message) {
+//        String messageId = message.getMessageProperties().getMessageId();
+//        return messageId == null || messageId.isBlank() ? UUID.randomUUID().toString() : messageId;
+//    }
 
     /**
      * 构建访问日志对象，包含IP解析和UA解析

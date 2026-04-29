@@ -18,20 +18,21 @@ spring:
   jackson:
     date-format: yyyy-MM-dd HH:mm:ss   # 指定返回json日期格式
     time-zone: GMT+8
-  rabbitmq:
-    host: ${link.rabbitmq.host}      # 服务地址
-    port: ${link.rabbitmq.port}           # 端口，默认5672
-    username: ${link.rabbitmq.username}      # 用户名
-    password: ${link.rabbitmq.password}      # 密码
-    virtual-host: ${link.rabbitmq.virtual-host}      # 虚拟主机
-    publisher-confirm-type: correlated
-    publisher-returns: true
-    template:
-      mandatory: true # 开启消息不可达时的回退机制，mandatory=true表示如果消息无法路由到队列，则会触发ReturnCallback回调函数
-    listener:
-      simple:
-        acknowledge-mode: manual # 消息确认模式，默认是自动（auto），改为手动（manual）后需要在代码中手动确认消息
-        default-requeue-rejected: false
+# todo 由于服务器资源有限，项目暂时不使用 RabbitMQ，相关配置注释掉，后续可根据需要启用并调整连接信息
+#  rabbitmq:
+#    host: ${link.rabbitmq.host}      # 服务地址
+#    port: ${link.rabbitmq.port}           # 端口，默认5672
+#    username: ${link.rabbitmq.username}      # 用户名
+#    password: ${link.rabbitmq.password}      # 密码
+#    virtual-host: ${link.rabbitmq.virtual-host}      # 虚拟主机
+#    publisher-confirm-type: correlated
+#    publisher-returns: true
+#    template:
+#      mandatory: true # 开启消息不可达时的回退机制，mandatory=true表示如果消息无法路由到队列，则会触发ReturnCallback回调函数
+#    listener:
+#      simple:
+#        acknowledge-mode: manual # 消息确认模式，默认是自动（auto），改为手动（manual）后需要在代码中手动确认消息
+#        default-requeue-rejected: false
   data:
     redis:
       host: ${link.redis.host}

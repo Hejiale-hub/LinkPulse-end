@@ -90,11 +90,11 @@
             <version>0.12.5</version>
             <scope>runtime</scope>
         </dependency>
-        <!-- mq -->
-        <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter-amqp</artifactId>
-        </dependency>
+        <!-- rabbitmq todo maven依赖，由于服务器资源有限，暂不使用mq -->
+<!--        <dependency>-->
+<!--            <groupId>org.springframework.boot</groupId>-->
+<!--            <artifactId>spring-boot-starter-amqp</artifactId>-->
+<!--        </dependency>-->
         <!-- User-Agent 解析库 -->
         <dependency>
             <groupId>nl.basjes.parse.useragent</groupId>

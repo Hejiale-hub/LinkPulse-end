@@ -11,12 +11,13 @@ link:
     password: linkpulse123
     database: 0
     timeout: 2000
-  rabbitmq:
-    host: 192.168.150.101
-    port: 5672
-    username: root
-    password: linkpulse123
-    virtual-host: /linkPulse
+# todo 由于服务器资源有限，项目暂时不使用 RabbitMQ，相关配置注释掉，后续可根据需要启用并调整连接信息
+#  rabbitmq:
+#    host: 192.168.150.101
+#    port: 5672
+#    username: root
+#    password: linkpulse123
+#    virtual-host: /linkPulse
   redirect:
     url-prefix: "http://localhost:8080/"
   logging:
