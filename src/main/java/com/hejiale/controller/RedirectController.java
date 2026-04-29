@@ -25,11 +25,17 @@ public class RedirectController {
      */
     @GetMapping("/{linkCode}")
     public void redirect(@PathVariable(value = "linkCode") String linkCode, HttpServletRequest request, HttpServletResponse response) throws NotFoundException {
+        // 记录业务接口响应时间
+        long startTime = System.currentTimeMillis();
+
         // 获取原始URL
         String url = LinkService.redirect(linkCode, request, response);
         // 302 重定向
         log.info("重定向...");
         response.setStatus(HttpServletResponse.SC_FOUND);
         response.setHeader("Location", url);
+
+        long endTime = System.currentTimeMillis();
+        log.info("接口响应时间：{}ms", endTime - startTime);
     }
 }
